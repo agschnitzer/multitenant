@@ -1,0 +1,40 @@
+logging:
+  file.name: ./log/backend.log
+  level:
+    root: INFO
+spring:
+  datasource:
+    url: jdbc:h2:file:./database/db;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    driver-class-name: org.h2.Driver
+    username: admin
+    password: admin
+  jpa:
+    properties:
+      hibernate:
+        hbm2ddl.delimiter: ";"
+        format_sql: true
+      javax.persistence.schema-generation.scripts:
+        action: none
+        create-target: src/main/resources/create.sql
+        drop-target: src/main/resources/drop.sql
+    open-in-view: false
+    show-sql: false
+    hibernate.ddl-auto: none
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+security:
+  auth:
+    header: Authorization
+    prefix: "Bearer "
+    login-uri: /api/v1/authentication
+    whitelist:
+      - /h2-console/**
+      - /api/v1/user/signup/**
+  jwt:
+    secret: mYq3s6v9y$B&E)H@McQfTjWnZr4u7w!z%C*F-JaNdRgUkXp2s5v8y/A?D(G+KbPe
+    type: JWT
+    issuer: gandalf
+    audience: elronds-council
+    expiration-time: 43200000
