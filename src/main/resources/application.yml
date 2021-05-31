@@ -19,22 +19,8 @@ spring:
         drop-target: src/main/resources/drop.sql
     open-in-view: false
     show-sql: false
-    hibernate.ddl-auto: none
+    hibernate.ddl-auto: update
   h2:
     console:
       enabled: true
       path: /h2-console
-security:
-  auth:
-    header: Authorization
-    prefix: "Bearer "
-    login-uri: /api/v1/authentication
-    whitelist:
-      - /h2-console/**
-      - /api/v1/user/signup/**
-  jwt:
-    secret: mYq3s6v9y$B&E)H@McQfTjWnZr4u7w!z%C*F-JaNdRgUkXp2s5v8y/A?D(G+KbPe
-    type: JWT
-    issuer: gandalf
-    audience: elronds-council
-    expiration-time: 43200000
