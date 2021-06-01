@@ -36,7 +36,6 @@ public class UserEndpoint {
     @PostMapping(value = "/signup") @ResponseStatus(HttpStatus.CREATED)
     public void signUp(@Valid @RequestBody UserSignupDto userSignupDto) {
         LOGGER.info("POST /api/v1/user/signup: {}", userSignupDto);
-        System.out.println(userSignupDto.getEmail());
         userService.signUp(userMapper.userSignupDtoToUser(userSignupDto));
     }
 }
