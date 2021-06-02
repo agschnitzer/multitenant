@@ -1,5 +1,6 @@
 package com.example.multitenant.exceptionhandler;
 
+import com.example.multitenant.exceptionhandler.exceptions.DataSourceException;
 import com.example.multitenant.exceptionhandler.exceptions.NotFoundException;
 import com.example.multitenant.exceptionhandler.exceptions.ValidationException;
 import org.jetbrains.annotations.NotNull;
@@ -30,7 +31,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         return handleExceptionInternal(ex, ex.getMessage(), new HttpHeaders(), HttpStatus.NOT_FOUND, request);
     }
 
-    @ExceptionHandler(value = {ValidationException.class})
+    @ExceptionHandler(value = {DataSourceException.class, ValidationException.class})
     protected ResponseEntity<Object> badRequest(RuntimeException ex, WebRequest request) {
         LOGGER.warn(ex.getClass().getSimpleName() + ": " + ex.getMessage());
         return handleExceptionInternal(ex, ex.getMessage(), new HttpHeaders(), HttpStatus.BAD_REQUEST, request);

@@ -1,5 +1,6 @@
 package com.example.multitenant.security;
 
+import com.example.multitenant.config.DatabaseConfig;
 import com.example.multitenant.config.properties.SecurityProperties;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
@@ -50,7 +51,7 @@ public class JwtAuthorization extends BasicAuthenticationFilter {
     }
 
     /**
-     * Extract jwt from http request.
+     * Extracts jwt from http request and sets database context.
      *
      * @param request containing valid jwt.
      * @return an authentication token with specified authorities.
@@ -77,6 +78,9 @@ public class JwtAuthorization extends BasicAuthenticationFilter {
         if (username == null || username.isEmpty()) {
             throw new IllegalArgumentException("Token contains no user");
         }
+
+        // select active database and set thread context accordingly
+        DatabaseConfig.DBContextHolder.setContext(username);
 
         return new UsernamePasswordAuthenticationToken(username, null, authorities);
     }
