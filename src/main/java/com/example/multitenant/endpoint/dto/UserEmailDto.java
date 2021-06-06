@@ -1,15 +1,13 @@
 package com.example.multitenant.endpoint.dto;
 
-import lombok.Builder;
-import lombok.Getter;
-import lombok.Setter;
-import lombok.ToString;
+import lombok.*;
 
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Pattern;
 import javax.validation.constraints.Size;
 
-@Getter @Setter @ToString @Builder
+@Getter @Setter @ToString
+@Builder @AllArgsConstructor @NoArgsConstructor
 public class UserEmailDto {
 
     @NotNull(message = "Email must not be null")

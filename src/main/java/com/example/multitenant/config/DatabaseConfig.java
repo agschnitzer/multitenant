@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 import org.springframework.core.io.ResourceLoader;
 import org.springframework.jdbc.datasource.init.ResourceDatabasePopulator;
 import org.springframework.jdbc.datasource.init.ScriptException;
@@ -33,6 +34,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 @Configuration
+@Profile("!test")
 public class DatabaseConfig {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -102,13 +104,17 @@ public class DatabaseConfig {
     }
 
     /**
-     * Initializes data source by executing sql script to create necessary tables.
+     * Initializes data source by executing sql script to create necessary tables and insert sample data.
      *
      * @param dataSource datasource without tables.
      */
     private void initDataSource(DataSource dataSource) {
         try {
             new ResourceDatabasePopulator(resourceLoader.getResource("classpath:create.sql")).execute(dataSource);
+        } catch (ScriptException ignored) {}
+
+        try {
+            new ResourceDatabasePopulator(resourceLoader.getResource("classpath:data.sql")).execute(dataSource);
         } catch (ScriptException ignored) {}
     }
 
