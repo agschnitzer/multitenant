@@ -1,6 +1,7 @@
 package com.example.multitenant.service;
 
 import com.example.multitenant.entity.User;
+import com.example.multitenant.exceptionhandler.exceptions.DataSourceException;
 import com.example.multitenant.exceptionhandler.exceptions.NotFoundException;
 import com.example.multitenant.exceptionhandler.exceptions.ValidationException;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -23,4 +24,14 @@ public interface UserService extends UserDetailsService {
      * @throws ValidationException if password and confirmation don't match.
      */
     void signUp(User user) throws ValidationException;
+
+    /**
+     * Patches email of user.
+     *
+     * @param user containing new email address.
+     * @return new email address.
+     * @throws ValidationException if user with given email already exists.
+     * @throws DataSourceException if something goes wrong during changing file names.
+     */
+    String patchEmail(User user) throws ValidationException, DataSourceException;
 }

@@ -18,10 +18,14 @@ import org.springframework.web.context.request.RequestAttributes;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
+import javax.servlet.http.HttpServletRequest;
 import javax.sql.DataSource;
 import javax.xml.bind.DatatypeConverter;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
@@ -114,13 +118,15 @@ public class DatabaseConfig {
     public class RoutingDataSource extends AbstractRoutingDataSource {
         @Override
         protected Object determineCurrentLookupKey() {
-            if (DBContextHolder.BYPASS) return DBContextHolder.getContext();
-
             RequestAttributes attributes = RequestContextHolder.getRequestAttributes();
             if (attributes == null) return DBContextHolder.DEFAULT_DATASOURCE;
 
-            String token = ((ServletRequestAttributes) Objects.requireNonNull(attributes))
-                    .getRequest().getHeader(securityProperties.getAuthHeader());
+            HttpServletRequest request = ((ServletRequestAttributes) Objects.requireNonNull(attributes)).getRequest();
+
+            String datasourceHeader = request.getHeader("X-Datasource");
+            if (datasourceHeader != null && datasourceHeader.equals("default")) return DBContextHolder.DEFAULT_DATASOURCE;
+
+            String token = request.getHeader(securityProperties.getAuthHeader());
             if (token == null || token.equals(securityProperties.getAuthTokenPrefix() + "null")) {
                 return DBContextHolder.DEFAULT_DATASOURCE;
             }
@@ -135,7 +141,7 @@ public class DatabaseConfig {
             if (!configurations.containsKey(dataSourceName)) addDataSource(dataSourceName);
 
             dataSource.afterPropertiesSet();
-            LOGGER.debug(String.format("DataSource: %s", configurations.get(dataSourceName)));
+            LOGGER.info(String.format("DataSource: %s", configurations.get(dataSourceName)));
 
             DBContextHolder.setContext(username);
             return DBContextHolder.getContext();
@@ -149,10 +155,7 @@ public class DatabaseConfig {
         private static final ThreadLocal<String> CONTEXT = new ThreadLocal<>();
         private static final String DEFAULT_DATASOURCE = "db";
 
-        private static Boolean BYPASS = false;
-
         public static String getContext() {
-            BYPASS = false;
             return DBContextHolder.CONTEXT.get();
         }
 
@@ -167,7 +170,7 @@ public class DatabaseConfig {
          * @return a string representing hashed username.
          * @throws DataSourceException if something goes wrong during lookup of hashing algorithm.
          */
-        public static String generateDataSourceName(String username) throws DataSourceException {
+        private static String generateDataSourceName(String username) throws DataSourceException {
             try {
                 MessageDigest messageDigest = MessageDigest.getInstance("MD5");
                 messageDigest.update(username.getBytes());
@@ -175,6 +178,21 @@ public class DatabaseConfig {
             } catch (NoSuchAlgorithmException e) {
                 throw new DataSourceException(
                         String.format("Problem occurred during hashing of username: %s", e.getMessage()));
+            }
+        }
+
+        /**
+         * Patches data source identifier.
+         *
+         * @param oldUsername non-hashed old identifier.
+         * @param newUsername non-hashed new identifier.
+         * @throws IOException if something goes wrong during changing file names.
+         */
+        public static void patchDataSourceName(String oldUsername, String newUsername) throws IOException {
+            String[] extensions = new String[]{"mv", "trace"};
+            for (String extension : extensions) {
+                Path source = Paths.get("database/" + generateDataSourceName(oldUsername) + "." + extension + ".db");
+                Files.move(source, source.resolveSibling(generateDataSourceName(newUsername) + "." + extension + ".db"));
             }
         }
     }

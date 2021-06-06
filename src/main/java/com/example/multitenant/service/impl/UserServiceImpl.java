@@ -1,6 +1,8 @@
 package com.example.multitenant.service.impl;
 
+import com.example.multitenant.config.DatabaseConfig;
 import com.example.multitenant.entity.User;
+import com.example.multitenant.exceptionhandler.exceptions.DataSourceException;
 import com.example.multitenant.exceptionhandler.exceptions.NotFoundException;
 import com.example.multitenant.exceptionhandler.exceptions.ValidationException;
 import com.example.multitenant.repository.UserRepository;
@@ -10,11 +12,14 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.core.authority.AuthorityUtils;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import javax.transaction.Transactional;
+import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.Optional;
 
@@ -63,10 +68,30 @@ public class UserServiceImpl implements UserService {
 
         user.setPassword(passwordEncoder.encode(user.getPassword()));
 
-        try {
-            userRepository.save(user);
-        } catch (DataIntegrityViolationException e) {
+        if (userRepository.existsUserByEmailEquals(user.getEmail())) {
             throw new ValidationException("Email already taken");
         }
+        userRepository.save(user);
+    }
+
+    @Transactional
+    @Override
+    public String patchEmail(User user) throws ValidationException, DataSourceException {
+        LOGGER.trace("patchEmail({})", user);
+
+        if (userRepository.existsUserByEmailEquals(user.getEmail())) {
+            throw new ValidationException("Email already taken");
+        }
+
+        User existingUser = findByEmail(SecurityContextHolder.getContext().getAuthentication().getName());
+
+        try {
+            DatabaseConfig.DBContextHolder.patchDataSourceName(existingUser.getEmail(), user.getEmail());
+        } catch (IOException e) {
+            throw new DataSourceException("Problem occurred during changing database identifier");
+        }
+        existingUser.setEmail(user.getEmail());
+
+        return userRepository.save(existingUser).getEmail();
     }
 }
