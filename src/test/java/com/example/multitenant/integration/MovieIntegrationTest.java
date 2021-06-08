@@ -42,7 +42,7 @@ public class MovieIntegrationTest implements MovieData, UserData {
     public void storedMovie_whenGettingMovie_shouldReturnDto() throws Exception {
         movieRepository.save(getMovie());
 
-        mockMvc.perform(get("/api/v1/movie/{id}", 1)
+        mockMvc.perform(get("/api/v1/movie/{id}", 1L)
                 .header("Authorization", jwtTokenizer.createToken(EMAIL, Collections.singletonList("ROLE_USER"))))
                 .andExpect(status().isOk());
     }
