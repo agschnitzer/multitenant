@@ -12,18 +12,11 @@ spring:
       idle-timeout: 30000
       max-lifetime: 30000
   jpa:
-    properties:
-      hibernate:
-        hbm2ddl.delimiter: ";"
-        format_sql: true
-        ddl-auto: none
-      javax.persistence.schema-generation:
-        scripts:
-          action: none
-          create-target: src/main/resources/create.sql
-          drop-target: src/main/resources/drop.sql
     open-in-view: false
     show-sql: false
+    properties.hibernate:
+      dialect: org.hibernate.dialect.H2Dialect
+      hbm2ddl.auto: none
   h2:
     console:
       enabled: true

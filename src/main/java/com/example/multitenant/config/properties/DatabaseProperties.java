@@ -4,6 +4,7 @@ import com.example.multitenant.exceptionhandler.exceptions.DataSourceException;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.jdbc.DataSourceBuilder;
 import org.springframework.context.annotation.Bean;
@@ -17,6 +18,29 @@ public class DatabaseProperties {
 
     @Autowired
     private Database database;
+
+    @Value("${spring.jpa.properties.hibernate.dialect}")
+    private String dialect;
+
+    @Value("${spring.jpa.properties.hibernate.hbm2ddl.auto}")
+    private String ddl;
+
+    public String getDialect() {
+        return dialect;
+    }
+
+    public String getDdl() {
+        return ddl;
+    }
+
+    public String getUrl() { return database.getUrl(); }
+
+    public String getDriverClassName() { return database.getDriverClassName(); }
+
+    public String getUsername() { return database.getUsername(); }
+
+    public String getPassword() { return database.getUsername(); }
+
 
     /**
      * Generates data source.

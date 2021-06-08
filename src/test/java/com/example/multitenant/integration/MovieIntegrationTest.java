@@ -2,6 +2,7 @@ package com.example.multitenant.integration;
 
 import com.example.multitenant.data.MovieData;
 import com.example.multitenant.data.UserData;
+import com.example.multitenant.repository.MovieRepository;
 import com.example.multitenant.security.JwtTokenizer;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -9,7 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.jdbc.Sql;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
 import javax.transaction.Transactional;
@@ -22,6 +23,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest
 @Transactional
 @AutoConfigureMockMvc
+@ActiveProfiles("test")
 @WithMockUser(username = "user@example.com", password = "SecretPassword1!")
 public class MovieIntegrationTest implements MovieData, UserData {
 
@@ -31,9 +33,15 @@ public class MovieIntegrationTest implements MovieData, UserData {
     @Autowired
     private JwtTokenizer jwtTokenizer;
 
-    @Test @Sql("classpath:movie.sql")
+    @Autowired
+    private MovieRepository movieRepository;
+
+    @Test
+    // @Sql("classpath:movie.sql")
     @DisplayName("After getting stored movie, dto should be returned.")
     public void storedMovie_whenGettingMovie_shouldReturnDto() throws Exception {
+        movieRepository.save(getMovie());
+
         mockMvc.perform(get("/api/v1/movie/{id}", 1)
                 .header("Authorization", jwtTokenizer.createToken(EMAIL, Collections.singletonList("ROLE_USER"))))
                 .andExpect(status().isOk());

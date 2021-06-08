@@ -7,6 +7,7 @@ import com.example.multitenant.security.JwtTokenizer;
 import com.example.multitenant.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Profile;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
@@ -35,15 +36,17 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
     private final PasswordEncoder passwordEncoder;
     private final SecurityProperties securityProperties;
     private final JwtTokenizer tokenizer;
+    private final DatabaseConfig databaseConfig;
     private final RequestMatcher whitelistRequests;
 
     @Autowired
     public SecurityConfig(UserService userService, PasswordEncoder passwordEncoder, JwtTokenizer tokenizer,
-                          SecurityProperties securityProperties) {
+                          SecurityProperties securityProperties, DatabaseConfig databaseConfig) {
         this.userService = userService;
         this.passwordEncoder = passwordEncoder;
         this.securityProperties = securityProperties;
         this.tokenizer = tokenizer;
+        this.databaseConfig = databaseConfig;
 
         this.whitelistRequests = new OrRequestMatcher(securityProperties.getWhitelist()
                 .stream()
@@ -87,7 +90,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 .anyRequest().authenticated()
                 .and()
                 .addFilter(new JwtAuthentication(securityProperties, authenticationManager(), tokenizer))
-                .addFilter(new JwtAuthorization(authenticationManager(), securityProperties))
+                .addFilter(new JwtAuthorization(authenticationManager(), securityProperties, databaseConfig))
                 .sessionManagement()
                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS);
     }

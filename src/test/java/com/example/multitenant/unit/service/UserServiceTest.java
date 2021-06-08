@@ -4,6 +4,7 @@ import com.example.multitenant.data.UserData;
 import com.example.multitenant.entity.User;
 import com.example.multitenant.exceptionhandler.exceptions.DataSourceException;
 import com.example.multitenant.exceptionhandler.exceptions.ValidationException;
+import com.example.multitenant.repository.UserRepository;
 import com.example.multitenant.service.UserService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -26,6 +27,9 @@ public class UserServiceTest implements UserData {
 
     @Autowired
     private UserService userService;
+
+    @Autowired
+    private UserRepository userRepository;
 
     @Test
     @DisplayName("After signing up user, entity should be saved.")
@@ -57,9 +61,12 @@ public class UserServiceTest implements UserData {
         assertThrows(ValidationException.class, () -> userService.signUp(user));
     }
 
-    @Test @Sql("classpath:user.sql")
+    @Test
+    // @Sql("classpath:user.sql")
     @DisplayName("After trying to sign up user with same email address as existing one, an exception should be thrown.")
     public void storedUser_whenSigningUp_shouldThrowException() {
+        userRepository.save(getUser());
+
         assertNotNull(userService.findByEmail(EMAIL));
         assertThrows(ValidationException.class, () -> userService.signUp(getUser()));
     }
