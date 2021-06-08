@@ -2,7 +2,9 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-A Spring Boot application showcasing an implementation of multi-tenancy. It provides multiple databases, one for each tenant, which can be created dynamically. The registered users are stored in the default database generated at startup. Depending on the authenticated user and accessed endpoint, the application dynamically selects the correct database.
+A Spring Boot application showcasing an implementation of multi-tenancy. It provides multiple databases, one for each tenant, which can be created dynamically. 
+
+Registered users are stored in the default database `db.mv.db` which is generated automatically. Depending on the authenticated user and requested service, the application dynamically selects the appropriate database.
 
 The application can be reached at `localhost:8080`.
 
@@ -31,7 +33,7 @@ After the successful registration, the user must be authenticated by sending a P
 
 ### Accessing the database
 
-I have created an endpoint `api/v1/movie` ~~with sample data to test this setup.~~ The email address of a user can be changed at `api/v1/user/email`. 
+I have created an endpoint `api/v1/movie` to test this configuration. A user's email address can be changed at `api/v1/user/email`. 
 
 #### Example response of `GET` request `api/v1/movie/1`:
 
@@ -51,8 +53,12 @@ I have created an endpoint `api/v1/movie` ~~with sample data to test this setup.
 }
 ```
 
-The database is generated after the first access / request. The hashed email address serves as filename `database/[hashed_email].mv.db` and can be accessed through [localhost:8080/h2-console](http://localhost:8080/h2-console) (username and password is `admin`).
+New movie entries can be added by using the [h2-console](http://localhost:8080/h2-console). (username and password is `admin`) 
 
-### Information about schema generation
+The database is generated after the first access / request with the hashed email address as the filename `database/[hashed_email].mv.db`.
 
-Hibernate automatically creates the schema of each database. In the case that the file [create.sql](src/main/resources/create.sql) doesn't exist, and a new datasource is being created, the application encounters an error and crashes. 
+### Initial database creation
+
+Hibernate automatically creates the schema of each database. In the case that the file [create.sql](src/main/resources/create.sql) doesn't exist, and a new datasource is being created, the application encounters an error and crashes.
+
+Just restart the application to fix it. I'm trying to optimise the initial creation of the default database, so that such errors will no longer occur in the future.

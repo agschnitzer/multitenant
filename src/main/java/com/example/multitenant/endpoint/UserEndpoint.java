@@ -1,6 +1,5 @@
 package com.example.multitenant.endpoint;
 
-import com.example.multitenant.config.DatabaseConfig;
 import com.example.multitenant.endpoint.dto.UserEmailDto;
 import com.example.multitenant.endpoint.dto.UserSignupDto;
 import com.example.multitenant.endpoint.mapper.UserMapper;
@@ -42,7 +41,7 @@ public class UserEndpoint {
     }
 
     /**
-     * Patches email of user.
+     * Changes email of user.
      *
      * @param userEmailDto containing new email.
      * @return new email address.

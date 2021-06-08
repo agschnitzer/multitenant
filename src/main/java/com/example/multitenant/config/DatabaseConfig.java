@@ -65,7 +65,9 @@ public class DatabaseConfig {
 
     @Bean
     public DataSource dataSource() throws IOException {
-        dataSource.setTargetDataSources(createTargetDataSource());
+        loadDataSources().forEach(this::addDataSource);
+
+        dataSource.setTargetDataSources(configurations);
         dataSource.setDefaultTargetDataSource(configurations.get(DBContextHolder.DEFAULT_DATASOURCE));
 
         return dataSource;
@@ -152,17 +154,6 @@ public class DatabaseConfig {
 
         dataSource.afterPropertiesSet();
         DBContextHolder.setContext(username);
-    }
-
-    /**
-     * Creates datasource collection.
-     *
-     * @return map containing each datasource.
-     * @throws IOException if something goes wrong during the loading process.
-     */
-    private Map<Object, Object> createTargetDataSource() throws IOException {
-        loadDataSources().forEach(this::addDataSource);
-        return configurations;
     }
 
     /**

@@ -13,7 +13,6 @@ import org.springframework.test.context.ActiveProfiles;
 import javax.transaction.Transactional;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @SpringBootTest
 @ActiveProfiles("test")

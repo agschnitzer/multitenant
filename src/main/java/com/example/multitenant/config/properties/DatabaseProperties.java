@@ -16,14 +16,18 @@ import java.sql.SQLException;
 @Configuration
 public class DatabaseProperties {
 
-    @Autowired
-    private Database database;
-
     @Value("${spring.jpa.properties.hibernate.dialect}")
     private String dialect;
 
     @Value("${spring.jpa.properties.hibernate.hbm2ddl.auto}")
     private String ddl;
+
+    private Database database;
+
+    @Autowired
+    public void setDatabase(Database database) {
+        this.database = database;
+    }
 
     public String getDialect() {
         return dialect;
@@ -40,7 +44,6 @@ public class DatabaseProperties {
     public String getUsername() { return database.getUsername(); }
 
     public String getPassword() { return database.getUsername(); }
-
 
     /**
      * Generates data source.

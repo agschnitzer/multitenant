@@ -2,7 +2,6 @@ package com.example.multitenant.unit.service;
 
 import com.example.multitenant.data.UserData;
 import com.example.multitenant.entity.User;
-import com.example.multitenant.exceptionhandler.exceptions.DataSourceException;
 import com.example.multitenant.exceptionhandler.exceptions.ValidationException;
 import com.example.multitenant.repository.UserRepository;
 import com.example.multitenant.service.UserService;
@@ -13,7 +12,6 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.jdbc.Sql;
 
 import javax.transaction.Transactional;
 

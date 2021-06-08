@@ -12,11 +12,18 @@ import java.util.List;
 @Configuration
 public class SecurityProperties {
 
-    @Autowired
     private Auth auth;
+    private Jwt jwt;
 
     @Autowired
-    private Jwt jwt;
+    public void setAuth(Auth auth) {
+        this.auth = auth;
+    }
+
+    @Autowired
+    public void setJwt(Jwt jwt) {
+        this.jwt = jwt;
+    }
 
     public String getAuthHeader() {
         return auth.header;

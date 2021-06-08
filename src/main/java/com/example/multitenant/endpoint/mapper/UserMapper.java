@@ -12,7 +12,7 @@ public interface UserMapper {
      * Maps incoming user register dto to user entity.
      *
      * @param userSignupDto contains email, password and confirmation.
-     * @return mapped user entity containing email and password only once.
+     * @return mapped user entity containing email and password.
      */
     User userSignupDtoToUser(UserSignupDto userSignupDto);
 

@@ -10,6 +10,7 @@ public interface MovieService {
      *
      * @param id of movie.
      * @return all details of the movie.
+     * @throws NotFoundException if movie with given id doesn't exist.
      */
     Movie findById(Long id) throws NotFoundException;
 }

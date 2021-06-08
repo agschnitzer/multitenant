@@ -26,9 +26,9 @@ public interface UserService extends UserDetailsService {
     void signUp(User user) throws ValidationException;
 
     /**
-     * Patches email of user.
+     * Changes email of user.
      *
-     * @param user containing new email address.
+     * @param user containing new email.
      * @return new email address.
      * @throws ValidationException if user with given email already exists.
      * @throws DataSourceException if something goes wrong during changing file names.
