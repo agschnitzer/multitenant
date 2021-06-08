@@ -10,7 +10,6 @@ import com.example.multitenant.service.UserService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.core.authority.AuthorityUtils;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -86,7 +85,7 @@ public class UserServiceImpl implements UserService {
         User existingUser = findByEmail(SecurityContextHolder.getContext().getAuthentication().getName());
 
         try {
-            DatabaseConfig.DBContextHolder.patchDataSourceName(existingUser.getEmail(), user.getEmail());
+            DatabaseConfig.renameDatasource(existingUser.getEmail(), user.getEmail());
         } catch (IOException e) {
             throw new DataSourceException("Problem occurred during changing database identifier");
         }

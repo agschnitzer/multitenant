@@ -1,25 +1,31 @@
 package com.example.multitenant.config;
 
 import com.example.multitenant.config.properties.DatabaseProperties;
-import com.example.multitenant.config.properties.SecurityProperties;
 import com.example.multitenant.exceptionhandler.exceptions.DataSourceException;
-import io.jsonwebtoken.Jwts;
+import com.github.fluent.hibernate.cfg.scanner.EntityScanner;
+import com.zaxxer.hikari.HikariDataSource;
+import org.hibernate.boot.MetadataSources;
+import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
+import org.hibernate.tool.hbm2ddl.SchemaExport;
+import org.hibernate.tool.schema.TargetType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Profile;
 import org.springframework.core.io.ResourceLoader;
 import org.springframework.jdbc.datasource.init.ResourceDatabasePopulator;
 import org.springframework.jdbc.datasource.init.ScriptException;
 import org.springframework.jdbc.datasource.lookup.AbstractRoutingDataSource;
-import org.springframework.web.context.request.RequestAttributes;
-import org.springframework.web.context.request.RequestContextHolder;
-import org.springframework.web.context.request.ServletRequestAttributes;
+import org.springframework.orm.hibernate5.LocalSessionFactoryBean;
+import org.springframework.orm.jpa.JpaTransactionManager;
+import org.springframework.orm.jpa.JpaVendorAdapter;
+import org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean;
+import org.springframework.orm.jpa.vendor.HibernateJpaVendorAdapter;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.annotation.EnableTransactionManagement;
 
-import javax.servlet.http.HttpServletRequest;
 import javax.sql.DataSource;
 import javax.xml.bind.DatatypeConverter;
 import java.io.IOException;
@@ -34,27 +40,26 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 @Configuration
-@Profile("!test")
+@EnableTransactionManagement
 public class DatabaseConfig {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+    private static final Map<Object, Object> configurations = new ConcurrentHashMap<>();
+    private static final String BASE_PACKAGE = "com.example.multitenant.entity";
+    private static final String CREATE_FILE_URI = "src/main/resources/create.sql";
 
     private final DatabaseProperties databaseProperties;
-    private final SecurityProperties securityProperties;
     private final ApplicationContext applicationContext;
     private final ResourceLoader resourceLoader;
-    private final Map<Object, Object> configurations;
     private final RoutingDataSource dataSource;
 
     @Autowired
-    public DatabaseConfig(DatabaseProperties databaseProperties, SecurityProperties securityProperties,
-                          ApplicationContext applicationContext, ResourceLoader resourceLoader) {
+    public DatabaseConfig(DatabaseProperties databaseProperties, ApplicationContext applicationContext,
+                          ResourceLoader resourceLoader) {
         this.databaseProperties = databaseProperties;
-        this.securityProperties = securityProperties;
         this.applicationContext = applicationContext;
         this.resourceLoader = resourceLoader;
 
-        configurations = new ConcurrentHashMap<>();
         dataSource = new RoutingDataSource();
     }
 
@@ -66,22 +71,105 @@ public class DatabaseConfig {
         return dataSource;
     }
 
+    @Bean
+    public LocalContainerEntityManagerFactoryBean entityManagerFactory() {
+        LocalContainerEntityManagerFactoryBean em = new LocalContainerEntityManagerFactoryBean();
+        JpaVendorAdapter vendorAdapter = new HibernateJpaVendorAdapter();
+
+        em.setDataSource((DataSource) configurations.get(DBContextHolder.DEFAULT_DATASOURCE));
+        em.setPackagesToScan(BASE_PACKAGE);
+        em.setJpaVendorAdapter(vendorAdapter);
+
+        return em;
+    }
+
+    @Bean
+    public LocalSessionFactoryBean sessionFactory() {
+        MetadataSources metadataSources = generateMetadata();
+
+        if (applicationContext.getResource(CREATE_FILE_URI).exists()) {
+            SchemaExport schemaExport = new SchemaExport();
+            schemaExport.setFormat(true);
+            schemaExport.setDelimiter(";");
+            schemaExport.setOutputFile(CREATE_FILE_URI);
+            schemaExport.createOnly(EnumSet.of(TargetType.SCRIPT), metadataSources.buildMetadata());
+        }
+
+        LocalSessionFactoryBean sessionFactory = new LocalSessionFactoryBean();
+        sessionFactory.setMetadataSources(metadataSources);
+        sessionFactory.setDataSource((DataSource) configurations.get(DBContextHolder.DEFAULT_DATASOURCE));
+        sessionFactory.setPackagesToScan(BASE_PACKAGE);
+        sessionFactory.setHibernateProperties(generateProperties());
+
+        return sessionFactory;
+    }
+
+    @Bean
+    public PlatformTransactionManager transactionManager() {
+        JpaTransactionManager transactionManager = new JpaTransactionManager();
+        transactionManager.setEntityManagerFactory(entityManagerFactory().getObject());
+
+        return transactionManager;
+    }
+
     /**
-     * Saves data sources to storage.
+     * Renames datasource identifier to new username.
      *
-     * @return newly filled storage, containing all available data sources.
-     * @throws IOException if something goes wrong during loading of data sources.
+     * @param oldUsername non-hashed old identifier.
+     * @param newUsername non-hashed new identifier.
+     * @throws IOException if something goes wrong during changing file names.
      */
-    public Map<Object, Object> createTargetDataSource() throws IOException {
+    public static void renameDatasource(String oldUsername, String newUsername) throws IOException {
+        String oldIdentifier = DBContextHolder.generateDataSourceName(oldUsername);
+        String newIdentifier = DBContextHolder.generateDataSourceName(newUsername);
+
+        Object dataSource = configurations.get(oldIdentifier);
+        configurations.remove(oldIdentifier);
+        HikariDataSource hikariDataSource = ((HikariDataSource) dataSource);
+        if (hikariDataSource != null && hikariDataSource.isRunning()) hikariDataSource.close();
+
+        String[] extensions = new String[]{"mv", "trace"};
+        for (String extension : extensions) {
+            Path source = Paths.get("database/" + oldIdentifier + "." + extension + ".db");
+            if (Files.exists(source)) Files.move(source, source.resolveSibling(newIdentifier + "." + extension + ".db"));
+        }
+    }
+
+    /**
+     * Sets active context to datasource of current user.
+     *
+     * @param username non-hashed identifier of user.
+     */
+    public void setActiveDatasource(String username) {
+        String dataSourceName = DBContextHolder.generateDataSourceName(username);
+        if (!configurations.containsKey(dataSourceName)) {
+            if (applicationContext.getResource("file:database/" + dataSourceName + ".mv.db").exists()) {
+                configurations.put(dataSourceName, databaseProperties.dataSource(dataSourceName, DBContextHolder.DEFAULT_DATASOURCE));
+            } else {
+                addDataSource(dataSourceName);
+            }
+        }
+
+        dataSource.afterPropertiesSet();
+        DBContextHolder.setContext(username);
+    }
+
+    /**
+     * Creates datasource collection.
+     *
+     * @return map containing each datasource.
+     * @throws IOException if something goes wrong during the loading process.
+     */
+    private Map<Object, Object> createTargetDataSource() throws IOException {
         loadDataSources().forEach(this::addDataSource);
         return configurations;
     }
 
     /**
-     * Loads all available data sources.
+     * Loads list containing each datasource.
      *
-     * @return list of data source names. If none are found then default data source is returned.
-     * @throws IOException if something goes wrong during accessing folder with data sources.
+     * @return list of datasource names. If none are found, the default datasource is returned.
+     * @throws IOException if something goes wrong during accessing the specified path.
      */
     private List<String> loadDataSources() throws IOException {
         List<String> dataSources = Arrays.stream(applicationContext.getResources("file:database/*.mv.db"))
@@ -92,88 +180,106 @@ public class DatabaseConfig {
     }
 
     /**
-     * Saves newly created data source and initializes it.
+     * Saves newly created datasource and initializes it.
      *
-     * @param username data source identifier.
+     * @param hashedUsername datasource identifier.
      */
-    private void addDataSource(String username) {
-        DataSource dataSource = databaseProperties.dataSource(username, DBContextHolder.DEFAULT_DATASOURCE);
+    private void addDataSource(String hashedUsername) {
+        DataSource dataSource = databaseProperties.dataSource(hashedUsername, DBContextHolder.DEFAULT_DATASOURCE);
 
-        configurations.put(username, dataSource);
+        configurations.put(hashedUsername, dataSource);
         initDataSource(dataSource);
     }
 
     /**
-     * Initializes data source by executing sql script to create necessary tables and insert sample data.
+     * Initializes datasource by executing sql scripts to create necessary tables and insert sample data.
      *
-     * @param dataSource datasource without tables.
+     * @param dataSource datasource loaded from storage or created recently.
      */
     private void initDataSource(DataSource dataSource) {
         try {
             new ResourceDatabasePopulator(resourceLoader.getResource("classpath:create.sql")).execute(dataSource);
         } catch (ScriptException ignored) {}
-
-        try {
-            new ResourceDatabasePopulator(resourceLoader.getResource("classpath:data.sql")).execute(dataSource);
-        } catch (ScriptException ignored) {}
     }
 
     /**
-     * RoutingDataSource responsible for the lookup of database.
+     * Generates metadata needed for creation of schema.
+     *
+     * @return metadata containing settings and annotated classes.
      */
-    public class RoutingDataSource extends AbstractRoutingDataSource {
+    private MetadataSources generateMetadata() {
+        Map<String, String> settings = new HashMap<>();
+        settings.put("connection.driver_class", databaseProperties.getDriverClassName());
+        settings.put("dialect", databaseProperties.getDialect());
+        settings.put("hibernate.connection.url", databaseProperties.getUrl());
+        settings.put("hibernate.connection.username", databaseProperties.getUsername());
+        settings.put("hibernate.connection.password", databaseProperties.getPassword());
+
+        MetadataSources metadataSources = new MetadataSources(
+                new StandardServiceRegistryBuilder().applySettings(settings).build()
+        );
+        for (Class<?> annotatedClass : EntityScanner.scanPackages(BASE_PACKAGE).result()) {
+            metadataSources.addAnnotatedClass(annotatedClass);
+        }
+
+        return metadataSources;
+    }
+
+    /**
+     * Generates hibernate properties.
+     *
+     * @return properties containing necessary hibernate configurations.
+     */
+    private Properties generateProperties() {
+        Properties hibernateProperties = new Properties();
+        hibernateProperties.setProperty("hibernate.hbm2ddl.auto", databaseProperties.getDdl());
+        hibernateProperties.setProperty("hibernate.dialect", databaseProperties.getDialect());
+
+        return hibernateProperties;
+    }
+
+    /**
+     * RoutingDataSource: responsible for the lookup of database.
+     */
+    private static class RoutingDataSource extends AbstractRoutingDataSource {
         @Override
         protected Object determineCurrentLookupKey() {
-            RequestAttributes attributes = RequestContextHolder.getRequestAttributes();
-            if (attributes == null) return DBContextHolder.DEFAULT_DATASOURCE;
-
-            HttpServletRequest request = ((ServletRequestAttributes) Objects.requireNonNull(attributes)).getRequest();
-
-            String datasourceHeader = request.getHeader("X-Datasource");
-            if (datasourceHeader != null && datasourceHeader.equals("default")) return DBContextHolder.DEFAULT_DATASOURCE;
-
-            String token = request.getHeader(securityProperties.getAuthHeader());
-            if (token == null || token.equals(securityProperties.getAuthTokenPrefix() + "null")) {
-                return DBContextHolder.DEFAULT_DATASOURCE;
-            }
-
-            String username = Jwts.parserBuilder()
-                    .setSigningKey(securityProperties.getJwtSecret().getBytes()).build()
-                    .parseClaimsJws(token.replace(securityProperties.getAuthTokenPrefix(), ""))
-                    .getBody().getSubject();
-            if(username == null) return DBContextHolder.DEFAULT_DATASOURCE;
-
-            String dataSourceName = DBContextHolder.generateDataSourceName(username);
-            if (!configurations.containsKey(dataSourceName)) addDataSource(dataSourceName);
-
-            dataSource.afterPropertiesSet();
-            LOGGER.info(String.format("DataSource: %s", configurations.get(dataSourceName)));
-
-            DBContextHolder.setContext(username);
-            return DBContextHolder.getContext();
+            return DBContextHolder.CONTEXT.get();
         }
     }
 
     /**
-     * Context holder of active data source.
+     * DBContextHolder: context holder of active datasource.
      */
     public static class DBContextHolder {
         private static final ThreadLocal<String> CONTEXT = new ThreadLocal<>();
         private static final String DEFAULT_DATASOURCE = "db";
 
-        public static String getContext() {
-            return DBContextHolder.CONTEXT.get();
-        }
-
-        public static void setContext(String context) {
-            CONTEXT.set(generateDataSourceName(context));
+        /**
+         * Sets context to default datasource.
+         */
+        public static void setDefault() {
+            CONTEXT.set(DEFAULT_DATASOURCE);
+            LOGGER.debug("Datasource Identifier: {}", DEFAULT_DATASOURCE);
         }
 
         /**
-         * Generates data source identifier.
+         * Sets context to hashed username of active user.
+         *
+         * @param context in form of the username.
+         */
+        protected static void setContext(String context) {
+            String identifier = generateDataSourceName(context);
+
+            CONTEXT.set(identifier);
+            LOGGER.debug("Datasource Identifier: {}", identifier);
+        }
+
+        /**
+         * Generates datasource identifier.
          *
          * @param username identifier of user.
-         * @return a string representing hashed username.
+         * @return a string representing the hashed username.
          * @throws DataSourceException if something goes wrong during lookup of hashing algorithm.
          */
         private static String generateDataSourceName(String username) throws DataSourceException {
@@ -184,21 +290,6 @@ public class DatabaseConfig {
             } catch (NoSuchAlgorithmException e) {
                 throw new DataSourceException(
                         String.format("Problem occurred during hashing of username: %s", e.getMessage()));
-            }
-        }
-
-        /**
-         * Patches data source identifier.
-         *
-         * @param oldUsername non-hashed old identifier.
-         * @param newUsername non-hashed new identifier.
-         * @throws IOException if something goes wrong during changing file names.
-         */
-        public static void patchDataSourceName(String oldUsername, String newUsername) throws IOException {
-            String[] extensions = new String[]{"mv", "trace"};
-            for (String extension : extensions) {
-                Path source = Paths.get("database/" + generateDataSourceName(oldUsername) + "." + extension + ".db");
-                Files.move(source, source.resolveSibling(generateDataSourceName(newUsername) + "." + extension + ".db"));
             }
         }
     }

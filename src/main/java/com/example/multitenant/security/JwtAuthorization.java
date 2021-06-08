@@ -27,10 +27,13 @@ public class JwtAuthorization extends BasicAuthenticationFilter {
     private static final Logger LOGGER = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
     private final SecurityProperties securityProperties;
+    private final DatabaseConfig databaseConfig;
 
-    public JwtAuthorization(AuthenticationManager authenticationManager, SecurityProperties securityProperties) {
+    public JwtAuthorization(AuthenticationManager authenticationManager, SecurityProperties securityProperties,
+                            DatabaseConfig databaseConfig) {
         super(authenticationManager);
         this.securityProperties = securityProperties;
+        this.databaseConfig = databaseConfig;
     }
 
     @Override
@@ -80,7 +83,11 @@ public class JwtAuthorization extends BasicAuthenticationFilter {
         }
 
         // select active database and set thread context accordingly
-        DatabaseConfig.DBContextHolder.setContext(username);
+        if (request.getRequestURI().startsWith("/api/v1/user/")) {
+            DatabaseConfig.DBContextHolder.setDefault();
+        } else {
+            databaseConfig.setActiveDatasource(username);
+        }
 
         return new UsernamePasswordAuthenticationToken(username, null, authorities);
     }
