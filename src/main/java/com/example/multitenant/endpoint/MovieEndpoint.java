@@ -6,10 +6,7 @@ import com.example.multitenant.service.MovieService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.lang.invoke.MethodHandles;
 
@@ -38,5 +35,17 @@ public class MovieEndpoint {
     public MovieDto findById(@PathVariable Long id) {
         LOGGER.info("GET /api/v1/movie/{}", id);
         return movieMapper.movieToMovieDto(movieService.findById(id));
+    }
+
+    /**
+     * Saves a movie.
+     *
+     * @param movieDto containing all details of movie entity.
+     * @return id of saved movie.
+     */
+    @PostMapping
+    public Long save(@RequestBody MovieDto movieDto) {
+        LOGGER.info("POST /api/v1/movie{}", movieDto);
+        return movieService.save(movieMapper.movieDtoToMovie(movieDto));
     }
 }

@@ -1,11 +1,11 @@
 package com.example.multitenant.endpoint.dto;
 
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 
 import java.time.LocalDate;
 
-@Getter @Setter
+@Getter @Setter @ToString
+@Builder @AllArgsConstructor @NoArgsConstructor
 public class MovieDto {
 
     private Long id;
