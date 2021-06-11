@@ -13,8 +13,7 @@ import org.springframework.test.context.ActiveProfiles;
 
 import javax.transaction.Transactional;
 
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest
 @ActiveProfiles("test")
@@ -39,5 +38,24 @@ public class MovieServiceTest implements MovieData {
     @DisplayName("After trying to get non-stored movie, should throw exception.")
     public void storedNothing_whenGettingMovie_shouldThrowNotFoundException() {
         assertThrows(NotFoundException.class, () -> movieService.findById(1L));
+    }
+
+    @Test
+    @DisplayName("After trying to save movie, should return id.")
+    public void storedNothing_orMovie_whenSavingMovie_shouldReturnId() {
+        Movie stored = getMovie();
+        Long id = movieService.save(stored);
+
+        assertAll(
+                () -> assertNotNull(id),
+                () -> assertNotNull(movieService.findById(id))
+        );
+
+        Long id2 = movieService.save(stored);
+
+        assertAll(
+                () -> assertNotNull(id2),
+                () -> assertNotNull(movieService.findById(id2))
+        );
     }
 }

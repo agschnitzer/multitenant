@@ -11,6 +11,7 @@ import org.hibernate.tool.schema.TargetType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -53,6 +54,9 @@ public class DatabaseConfig {
     private final ResourceLoader resourceLoader;
     private final RoutingDataSource dataSource;
 
+    @Value("${spring.db}")
+    private String databaseLocation;
+
     @Autowired
     public DatabaseConfig(DatabaseProperties databaseProperties, ApplicationContext applicationContext,
                           ResourceLoader resourceLoader) {
@@ -78,7 +82,7 @@ public class DatabaseConfig {
         LocalContainerEntityManagerFactoryBean em = new LocalContainerEntityManagerFactoryBean();
         JpaVendorAdapter vendorAdapter = new HibernateJpaVendorAdapter();
 
-        em.setDataSource((DataSource) configurations.get(DBContextHolder.DEFAULT_DATASOURCE));
+        em.setDataSource(dataSource);
         em.setPackagesToScan(BASE_PACKAGE);
         em.setJpaVendorAdapter(vendorAdapter);
 
@@ -144,8 +148,9 @@ public class DatabaseConfig {
      */
     public void setActiveDatasource(String username) {
         String dataSourceName = DBContextHolder.generateDataSourceName(username);
+
         if (!configurations.containsKey(dataSourceName)) {
-            if (applicationContext.getResource("file:database/" + dataSourceName + ".mv.db").exists()) {
+            if (applicationContext.getResource("file:" + databaseLocation + "/" + dataSourceName + ".mv.db").exists()) {
                 configurations.put(dataSourceName, databaseProperties.dataSource(dataSourceName, DBContextHolder.DEFAULT_DATASOURCE));
             } else {
                 addDataSource(dataSourceName);
@@ -163,7 +168,7 @@ public class DatabaseConfig {
      * @throws IOException if something goes wrong during accessing the specified path.
      */
     private List<String> loadDataSources() throws IOException {
-        List<String> dataSources = Arrays.stream(applicationContext.getResources("file:database/*.mv.db"))
+        List<String> dataSources = Arrays.stream(applicationContext.getResources("file:" + databaseLocation + "/*.mv.db"))
                 .map(file -> Objects.requireNonNull(file.getFilename()).split("\\.")[0])
                 .collect(Collectors.toList());
 

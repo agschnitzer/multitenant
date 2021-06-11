@@ -14,4 +14,12 @@ public interface MovieMapper {
      * @return a dto containing all movie details.
      */
     MovieDto movieToMovieDto(Movie movie);
+
+    /**
+     * Maps a movie dto to a movie entity.
+     *
+     * @param movieDto dto.
+     * @return an entity containing all movie details.
+     */
+    Movie movieDtoToMovie(MovieDto movieDto);
 }

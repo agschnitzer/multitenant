@@ -32,4 +32,11 @@ public class MovieServiceImpl implements MovieService {
         if (movie.isEmpty()) throw new NotFoundException(String.format("Movie with id: %d not found", id));
         return movie.get();
     }
+
+    @Override
+    public Long save(Movie movie) {
+        LOGGER.trace("save({})", movie);
+
+        return movieRepository.save(movie).getId();
+    }
 }

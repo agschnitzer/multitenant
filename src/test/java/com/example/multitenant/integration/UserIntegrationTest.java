@@ -44,10 +44,12 @@ public class UserIntegrationTest implements UserData {
     }
 
     @Test
-    // @Sql("classpath:user.sql")
     @DisplayName("After trying to sign up stored user, should throw exception and status bad request.")
     public void storedUser_whenSigningUp_shouldThrowException() throws Exception {
-        userRepository.save(getUser());
+        mockMvc.perform(post("/api/v1/user/signup")
+                .contentType("application/json")
+                .content(objectMapper.writeValueAsString(getUserSignUpDto())))
+                .andExpect(status().isCreated());
 
         mockMvc.perform(post("/api/v1/user/signup")
                 .contentType("application/json")

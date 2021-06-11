@@ -13,4 +13,12 @@ public interface MovieService {
      * @throws NotFoundException if movie with given id doesn't exist.
      */
     Movie findById(Long id) throws NotFoundException;
+
+    /**
+     * Saves movie to database.
+     *
+     * @param movie entity containing all details.
+     * @return id of saved movie.
+     */
+    Long save(Movie movie);
 }

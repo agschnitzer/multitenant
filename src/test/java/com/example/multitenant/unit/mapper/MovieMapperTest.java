@@ -36,8 +36,22 @@ public class MovieMapperTest implements MovieData {
     }
 
     @Test
+    @DisplayName("After mapping MovieDto to Movie, entity should contain same properties as dto.")
+    public void givenMovieDto_whenMappingToMovie_entityHasAllProperties() {
+        MovieDto dto = getMovieDto();
+        Movie entity = movieMapper.movieDtoToMovie(dto);
+
+        assertAll(
+                () -> assertEquals(dto.getTitle(), entity.getTitle()),
+                () -> assertEquals(dto.getRuntime(), entity.getRuntime()),
+                () -> assertEquals(dto.getReleaseDate(), entity.getReleaseDate())
+        );
+    }
+
+    @Test
     @DisplayName("After mapping empty object, result should also be empty.")
-    public void givenNothing_whenMappingToMovieDto_resultShouldBeNull() {
+    public void givenNothing_whenMappingToMovieDto_orMovie_resultShouldBeNull() {
         assertNull(movieMapper.movieToMovieDto(null));
+        assertNull(movieMapper.movieDtoToMovie(null));
     }
 }
