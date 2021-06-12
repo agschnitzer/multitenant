@@ -2,7 +2,6 @@ package com.example.multitenant.service.impl;
 
 import com.example.multitenant.config.DatabaseConfig;
 import com.example.multitenant.entity.User;
-import com.example.multitenant.exceptionhandler.exceptions.DataSourceException;
 import com.example.multitenant.exceptionhandler.exceptions.NotFoundException;
 import com.example.multitenant.exceptionhandler.exceptions.ValidationException;
 import com.example.multitenant.repository.UserRepository;
@@ -58,7 +57,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public void signUp(User user) throws ValidationException {
+    public void signup(User user) throws ValidationException {
         LOGGER.trace("signUp({})", user);
 
         if (!user.getPassword().equals(user.getConfirmation())) {
@@ -67,7 +66,7 @@ public class UserServiceImpl implements UserService {
 
         user.setPassword(passwordEncoder.encode(user.getPassword()));
 
-        if (userRepository.existsUserByEmailEquals(user.getEmail())) {
+        if (existsByEmail(user.getEmail())) {
             throw new ValidationException("Email already taken");
         }
         userRepository.save(user);
@@ -75,20 +74,16 @@ public class UserServiceImpl implements UserService {
 
     @Transactional
     @Override
-    public String patchEmail(User user) throws ValidationException, DataSourceException {
+    public String patchEmail(User user) throws ValidationException, IOException {
         LOGGER.trace("patchEmail({})", user);
 
-        if (userRepository.existsUserByEmailEquals(user.getEmail())) {
+        if (existsByEmail(user.getEmail())) {
             throw new ValidationException("Email already taken");
         }
 
         User existingUser = findByEmail(SecurityContextHolder.getContext().getAuthentication().getName());
 
-        try {
-            DatabaseConfig.renameDatasource(existingUser.getEmail(), user.getEmail());
-        } catch (IOException e) {
-            throw new DataSourceException("Problem occurred during changing database identifier");
-        }
+        DatabaseConfig.renameDatasource(existingUser.getEmail(), user.getEmail());
         existingUser.setEmail(user.getEmail());
 
         return userRepository.save(existingUser).getEmail();

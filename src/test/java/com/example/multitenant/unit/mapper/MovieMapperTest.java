@@ -23,12 +23,14 @@ public class MovieMapperTest implements MovieData {
     private MovieMapper movieMapper;
 
     @Test
-    @DisplayName("After mapping Movie to MovieDto, dto should contain same properties as entity.")
-    public void givenMovie_whenMappingToMovieDto_dtoHasAllProperties() {
+    @DisplayName("After mapping entity to dto, dto should contain all properties of entity.")
+    public void givenEntity_whenMappingToDto_dtoHasAllProperties() {
         Movie entity = getMovie();
         MovieDto dto = movieMapper.movieToMovieDto(entity);
 
         assertAll(
+                () -> assertNull(entity.getId()),
+                () -> assertNull(dto.getId()),
                 () -> assertEquals(entity.getTitle(), dto.getTitle()),
                 () -> assertEquals(entity.getRuntime(), dto.getRuntime()),
                 () -> assertEquals(entity.getReleaseDate(), dto.getReleaseDate())
@@ -36,12 +38,14 @@ public class MovieMapperTest implements MovieData {
     }
 
     @Test
-    @DisplayName("After mapping MovieDto to Movie, entity should contain same properties as dto.")
-    public void givenMovieDto_whenMappingToMovie_entityHasAllProperties() {
+    @DisplayName("After mapping dto to entity, entity should contain all properties of dto.")
+    public void givenDto_whenMappingToEntity_entityHasAllProperties() {
         MovieDto dto = getMovieDto();
         Movie entity = movieMapper.movieDtoToMovie(dto);
 
         assertAll(
+                () -> assertNull(dto.getId()),
+                () -> assertNull(entity.getId()),
                 () -> assertEquals(dto.getTitle(), entity.getTitle()),
                 () -> assertEquals(dto.getRuntime(), entity.getRuntime()),
                 () -> assertEquals(dto.getReleaseDate(), entity.getReleaseDate())
@@ -49,8 +53,8 @@ public class MovieMapperTest implements MovieData {
     }
 
     @Test
-    @DisplayName("After mapping empty object, result should also be empty.")
-    public void givenNothing_whenMappingToMovieDto_orMovie_resultShouldBeNull() {
+    @DisplayName("After mapping null, result should also be null.")
+    public void givenNothing_whenMappingToDto_orEntity_resultShouldBeNull() {
         assertNull(movieMapper.movieToMovieDto(null));
         assertNull(movieMapper.movieDtoToMovie(null));
     }

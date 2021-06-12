@@ -11,6 +11,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
+import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 
 @RestController
@@ -31,23 +32,24 @@ public class UserEndpoint {
     /**
      * Signs up user.
      *
-     * @param userSignupDto user request data containing email and password.
+     * @param userSignupDto containing details about user.
      */
     @CrossOrigin(origins = "*")
     @PostMapping("/signup") @ResponseStatus(HttpStatus.CREATED)
-    public void signUp(@Valid @RequestBody UserSignupDto userSignupDto) {
+    public void save(@Valid @RequestBody UserSignupDto userSignupDto) {
         LOGGER.info("POST /api/v1/user/signup: {}", userSignupDto);
-        userService.signUp(userMapper.userSignupDtoToUser(userSignupDto));
+        userService.signup(userMapper.userSignupDtoToUser(userSignupDto));
     }
 
     /**
      * Changes email of user.
      *
      * @param userEmailDto containing new email.
-     * @return new email address.
+     * @return changed email.
+     * @throws IOException if something goes wrong during changing file names.
      */
     @PatchMapping("/email")
-    public String patchEmail(@Valid @RequestBody UserEmailDto userEmailDto) {
+    public String changeEmail(@Valid @RequestBody UserEmailDto userEmailDto) throws IOException {
         LOGGER.info("PATCH /api/v1/user/email: {}", userEmailDto);
         return userService.patchEmail(userMapper.userEmailDtoToUser(userEmailDto));
     }

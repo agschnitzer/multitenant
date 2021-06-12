@@ -9,18 +9,18 @@ import org.mapstruct.Mapper;
 public interface UserMapper {
 
     /**
-     * Maps incoming user register dto to user entity.
+     * Maps a user signup dto to a user entity.
      *
-     * @param userSignupDto contains email, password and confirmation.
-     * @return mapped user entity containing email and password.
+     * @param userSignupDto dto with valid email and password.
+     * @return an entity containing all dto details.
      */
     User userSignupDtoToUser(UserSignupDto userSignupDto);
 
     /**
-     * Maps incoming user email dto to user entity.
+     * Maps a user email dto to a user entity.
      *
-     * @param userEmailDto contains new email.
-     * @return mapped user entity containing email.
+     * @param userEmailDto dto with valid email.
+     * @return an entity containing all dto details.
      */
     User userEmailDtoToUser(UserEmailDto userEmailDto);
 }

@@ -1,9 +1,7 @@
 package com.example.multitenant.config;
 
 import com.example.multitenant.config.properties.DatabaseProperties;
-import com.example.multitenant.exceptionhandler.exceptions.DataSourceException;
 import com.github.fluent.hibernate.cfg.scanner.EntityScanner;
-import com.zaxxer.hikari.HikariDataSource;
 import org.hibernate.boot.MetadataSources;
 import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
 import org.hibernate.tool.hbm2ddl.SchemaExport;
@@ -92,14 +90,7 @@ public class DatabaseConfig {
     @Bean
     public LocalSessionFactoryBean sessionFactory() {
         MetadataSources metadataSources = generateMetadata();
-
-        if (applicationContext.getResource(CREATE_FILE_URI).exists()) {
-            SchemaExport schemaExport = new SchemaExport();
-            schemaExport.setFormat(true);
-            schemaExport.setDelimiter(";");
-            schemaExport.setOutputFile(CREATE_FILE_URI);
-            schemaExport.createOnly(EnumSet.of(TargetType.SCRIPT), metadataSources.buildMetadata());
-        }
+        if (applicationContext.getResource(CREATE_FILE_URI).exists()) createDataSourceSchema(metadataSources);
 
         LocalSessionFactoryBean sessionFactory = new LocalSessionFactoryBean();
         sessionFactory.setMetadataSources(metadataSources);
@@ -139,6 +130,15 @@ public class DatabaseConfig {
     }
 
     /**
+     * Gets configuration. Only used for testing purposes.
+     *
+     * @return a map containing all data sources.
+     */
+    protected static Map<Object, Object> getConfigurations() {
+        return configurations;
+    }
+
+    /**
      * Sets active context to datasource of current user.
      *
      * @param username non-hashed identifier of user.
@@ -156,6 +156,43 @@ public class DatabaseConfig {
 
         dataSource.afterPropertiesSet();
         DBContextHolder.setContext(username);
+    }
+
+    /**
+     * Creates sql file from schema.
+     *
+     * @param metadataSources containing annotated classes.
+     */
+    protected void createDataSourceSchema(MetadataSources metadataSources) {
+        SchemaExport schemaExport = new SchemaExport();
+
+        schemaExport.setFormat(true);
+        schemaExport.setDelimiter(";");
+        schemaExport.setOutputFile(CREATE_FILE_URI);
+        schemaExport.createOnly(EnumSet.of(TargetType.SCRIPT), metadataSources.buildMetadata());
+    }
+
+    /**
+     * Generates metadata needed for creation of schema.
+     *
+     * @return metadata containing settings and annotated classes.
+     */
+    protected MetadataSources generateMetadata() {
+        Map<String, String> settings = new HashMap<>();
+        settings.put("connection.driver_class", databaseProperties.getDriverClassName());
+        settings.put("dialect", databaseProperties.getDialect());
+        settings.put("hibernate.connection.url", databaseProperties.getUrl());
+        settings.put("hibernate.connection.username", databaseProperties.getUsername());
+        settings.put("hibernate.connection.password", databaseProperties.getPassword());
+
+        MetadataSources metadataSources = new MetadataSources(
+                new StandardServiceRegistryBuilder().applySettings(settings).build()
+        );
+        for (Class<?> annotatedClass : EntityScanner.scanPackages(BASE_PACKAGE).result()) {
+            metadataSources.addAnnotatedClass(annotatedClass);
+        }
+
+        return metadataSources;
     }
 
     /**
@@ -193,29 +230,6 @@ public class DatabaseConfig {
         try {
             new ResourceDatabasePopulator(resourceLoader.getResource("classpath:create.sql")).execute(dataSource);
         } catch (ScriptException ignored) {}
-    }
-
-    /**
-     * Generates metadata needed for creation of schema.
-     *
-     * @return metadata containing settings and annotated classes.
-     */
-    private MetadataSources generateMetadata() {
-        Map<String, String> settings = new HashMap<>();
-        settings.put("connection.driver_class", databaseProperties.getDriverClassName());
-        settings.put("dialect", databaseProperties.getDialect());
-        settings.put("hibernate.connection.url", databaseProperties.getUrl());
-        settings.put("hibernate.connection.username", databaseProperties.getUsername());
-        settings.put("hibernate.connection.password", databaseProperties.getPassword());
-
-        MetadataSources metadataSources = new MetadataSources(
-                new StandardServiceRegistryBuilder().applySettings(settings).build()
-        );
-        for (Class<?> annotatedClass : EntityScanner.scanPackages(BASE_PACKAGE).result()) {
-            metadataSources.addAnnotatedClass(annotatedClass);
-        }
-
-        return metadataSources;
     }
 
     /**
@@ -273,17 +287,17 @@ public class DatabaseConfig {
          *
          * @param username identifier of user.
          * @return a string representing the hashed username.
-         * @throws DataSourceException if something goes wrong during lookup of hashing algorithm.
          */
-        private static String generateDataSourceName(String username) throws DataSourceException {
+        protected static String generateDataSourceName(String username) {
+            MessageDigest messageDigest = null;
+
             try {
-                MessageDigest messageDigest = MessageDigest.getInstance("SHA-256");
+                messageDigest = MessageDigest.getInstance("SHA-256");
                 messageDigest.update(username.getBytes());
-                return DatatypeConverter.printHexBinary(messageDigest.digest());
-            } catch (NoSuchAlgorithmException e) {
-                throw new DataSourceException(
-                        String.format("Problem occurred during hashing of username: %s", e.getMessage()));
-            }
+            } catch (NoSuchAlgorithmException ignored) {}
+
+            assert messageDigest != null;
+            return DatatypeConverter.printHexBinary(messageDigest.digest());
         }
     }
 }

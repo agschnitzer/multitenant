@@ -29,7 +29,7 @@ public class MovieEndpoint {
      * Finds movie with given id.
      *
      * @param id of movie.
-     * @return all details of the movie.
+     * @return all details about the movie.
      */
     @GetMapping("/{id}")
     public MovieDto findById(@PathVariable Long id) {
@@ -38,9 +38,9 @@ public class MovieEndpoint {
     }
 
     /**
-     * Saves a movie.
+     * Saves movie.
      *
-     * @param movieDto containing all details of movie entity.
+     * @param movieDto containing details about movie.
      * @return id of saved movie.
      */
     @PostMapping

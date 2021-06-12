@@ -24,34 +24,30 @@ public class UserMapperTest implements UserData {
     private UserMapper userMapper;
 
     @Test
-    @DisplayName("After mapping UserSignupDto to User, entity should contain same properties as dto.")
-    public void givenUserSignupDto_whenMappingToUser_entityHasAllProperties() {
-        UserSignupDto dto = getUserSignUpDto();
-        User entity = userMapper.userSignupDtoToUser(dto);
+    @DisplayName("After mapping dto to entity, entity should contain all properties of dto.")
+    public void givenDto_whenMappingToEntity_entityHasAllProperties() {
+        UserSignupDto signUpDto = getUserSignUpDto();
+        User signUpEntity = userMapper.userSignupDtoToUser(signUpDto);
 
         assertAll(
-                () -> assertEquals(dto.getEmail(), entity.getEmail()),
-                () -> assertEquals(dto.getPassword(), entity.getPassword()),
-                () -> assertEquals(dto.getConfirmation(), entity.getConfirmation())
+                () -> assertEquals(signUpDto.getEmail(), signUpEntity.getEmail()),
+                () -> assertEquals(signUpDto.getPassword(), signUpEntity.getPassword()),
+                () -> assertEquals(signUpDto.getConfirmation(), signUpEntity.getConfirmation())
+        );
+
+        UserEmailDto emailDto = getUserEmailDto();
+        User emailEntity = userMapper.userEmailDtoToUser(emailDto);
+
+        assertAll(
+                () -> assertEquals(emailDto.getEmail(), emailEntity.getEmail()),
+                () -> assertNull(emailEntity.getPassword()),
+                () -> assertNull(emailEntity.getConfirmation())
         );
     }
 
     @Test
-    @DisplayName("After mapping UserEmailDto to User, entity should contain same properties as dto.")
-    public void givenUserEmailDto_whenMappingToUser_entityHasAllProperties() {
-        UserEmailDto dto = getUserEmailDto();
-        User entity = userMapper.userEmailDtoToUser(dto);
-
-        assertAll(
-                () -> assertEquals(dto.getEmail(), entity.getEmail()),
-                () -> assertNull(entity.getPassword()),
-                () -> assertNull(entity.getConfirmation())
-        );
-    }
-
-    @Test
-    @DisplayName("After mapping empty object, result should also be empty.")
-    public void givenNothing_whenMappingToUser_entityShouldBeNull() {
+    @DisplayName("After mapping null, result should also be null.")
+    public void givenNothing_whenMappingToEntity_resultShouldBeNull() {
         assertNull(userMapper.userSignupDtoToUser(null));
         assertNull(userMapper.userEmailDtoToUser(null));
     }

@@ -22,40 +22,46 @@ public class MovieServiceTest implements MovieData {
 
     @Autowired
     private MovieService movieService;
+
     @Autowired
     private MovieRepository movieRepository;
 
     @Test
-    @DisplayName("After trying to get stored movie, should return movie.")
-    public void storedMovie_whenGettingMovie_shouldReturnMovie() {
+    @DisplayName("Getting stored entity should return entity.")
+    public void storedEntity_whenGettingEntity_shouldReturnEntity() {
         Movie stored = getMovie();
         movieRepository.save(stored);
 
-        assertNotNull(movieService.findById(stored.getId()));
-    }
-
-    @Test
-    @DisplayName("After trying to get non-stored movie, should throw exception.")
-    public void storedNothing_whenGettingMovie_shouldThrowNotFoundException() {
-        assertThrows(NotFoundException.class, () -> movieService.findById(1L));
-    }
-
-    @Test
-    @DisplayName("After trying to save movie, should return id.")
-    public void storedNothing_orMovie_whenSavingMovie_shouldReturnId() {
-        Movie stored = getMovie();
-        Long id = movieService.save(stored);
+        Movie returned = movieService.findById(stored.getId());
 
         assertAll(
-                () -> assertNotNull(id),
-                () -> assertNotNull(movieService.findById(id))
+                () -> assertNotNull(returned),
+                () -> assertEquals(stored, returned)
+        );
+    }
+
+    @Test
+    @DisplayName("Trying to get a non-stored entity should throw an exception.")
+    public void storedNothing_whenGettingEntity_shouldThrowException() {
+        assertThrows(NotFoundException.class, () -> movieService.findById(ID));
+    }
+
+    @Test
+    @DisplayName("Saving entity should return its id.")
+    public void storedNothing_orOtherEntities_whenSavingEntity_shouldReturnId() {
+        Movie stored = getMovie();
+        Long id1 = movieService.save(stored);
+
+        assertAll(
+                () -> assertNotNull(id1),
+                () -> assertEquals(stored.getId(), id1)
         );
 
         Long id2 = movieService.save(stored);
 
         assertAll(
                 () -> assertNotNull(id2),
-                () -> assertNotNull(movieService.findById(id2))
+                () -> assertEquals(stored.getId(), id2)
         );
     }
 }

@@ -12,6 +12,7 @@ import java.time.Month;
 
 public interface MovieData {
 
+    Long ID = 1L;
     String TITLE = "Movie Title";
     Long RUNTIME = 123L;
     LocalDate RELEASE_DATE = LocalDate.of(2020, Month.JANUARY, 1);
@@ -19,7 +20,7 @@ public interface MovieData {
     /**
      * Builds a movie entity.
      *
-     * @return movie entity containing all details.
+     * @return entity containing details about movie.
      */
     default Movie getMovie() {
         return Movie.builder()
@@ -30,9 +31,9 @@ public interface MovieData {
     }
 
     /**
-     * Bulds a movie dto.
+     * Builds a movie dto.
      *
-     * @return movie dto containing all details.
+     * @return dto containing details about movie.
      */
     default MovieDto getMovieDto() {
         return MovieDto.builder()
@@ -43,15 +44,36 @@ public interface MovieData {
     }
 
     /**
-     *  Builds a movie entity.
+     * Builds a movie entity.
      *
-     * @return movie entity in json format.
+     * @return json object containing details about movie.
+     * @throws JsonProcessingException if something goes wrong during parsing json.
      */
-    default String getMovieJson() throws JsonProcessingException {
+    default String getMovieDtoJson() throws JsonProcessingException {
+        return getMovieMapper().writeValueAsString(getMovie());
+    }
+
+    /**
+     * Builds a movie dto;
+     *
+     * @param json object containing details about movie.
+     * @return dto containing all properties of object.
+     * @throws JsonProcessingException if something goes wrong during parsing json.
+     */
+    default MovieDto getMovieDto(String json) throws JsonProcessingException {
+        return getMovieMapper().readValue(json, MovieDto.class);
+    }
+
+    /**
+     * Builds an object mapper.
+     *
+     * @return object mapper with support of LocalDate.
+     */
+    default ObjectMapper getMovieMapper() {
         ObjectMapper mapper = new ObjectMapper();
         mapper.registerModule(new JavaTimeModule());
         mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
 
-        return mapper.writeValueAsString(getMovie());
+        return mapper;
     }
 }

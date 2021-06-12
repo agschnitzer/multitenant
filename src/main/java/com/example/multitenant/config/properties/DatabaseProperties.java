@@ -1,6 +1,5 @@
 package com.example.multitenant.config.properties;
 
-import com.example.multitenant.exceptionhandler.exceptions.DataSourceException;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -62,10 +61,7 @@ public class DatabaseProperties {
 
         try {
             if (!identifier.equals(defaultIdentifier)) dataSource.getConnection();
-        } catch (SQLException e) {
-            throw new DataSourceException(
-                    String.format("Problem occurred during connecting to data source: %s", e.getMessage()));
-        }
+        } catch (SQLException ignored) {}
 
         return dataSource;
     }

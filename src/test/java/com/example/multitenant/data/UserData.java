@@ -1,5 +1,6 @@
 package com.example.multitenant.data;
 
+import com.example.multitenant.endpoint.dto.UserAuthenticationDto;
 import com.example.multitenant.endpoint.dto.UserEmailDto;
 import com.example.multitenant.endpoint.dto.UserSignupDto;
 import com.example.multitenant.entity.User;
@@ -11,11 +12,12 @@ public interface UserData {
     String EMAIL = "user@example.com";
     String NEW_EMAIL = "user1@example.com";
     String PASSWORD = "SecretPassword1!";
+    String WRONG_PASSWORD = "WrongPassword";
 
     /**
      * Builds a user entity.
      *
-     * @return user entity containing valid email, password and confirmation.
+     * @return entity containing details about user.
      */
     default User getUser() {
         return User.builder()
@@ -29,16 +31,28 @@ public interface UserData {
      * Builds a user entity.
      *
      * @param email of user.
-     * @return user entity containing only new email.
+     * @return entity containing user email details.
      */
     default User getUserEmail(String email) {
         return User.builder().email(email).build();
     }
 
     /**
+     * Builds a user authentication dto.
+     *
+     * @return dto containing details about user.
+     */
+    default UserAuthenticationDto getUserAuthenticationDto() {
+        return UserAuthenticationDto.builder()
+                .email(EMAIL)
+                .password(PASSWORD)
+                .build();
+    }
+
+    /**
      * Builds a user signup dto.
      *
-     * @return user dto containing valid email, password and confirmation.
+     * @return dto containing details about user.
      */
     default UserSignupDto getUserSignUpDto() {
         return UserSignupDto.builder()
@@ -51,7 +65,7 @@ public interface UserData {
     /**
      * Builds a user email dto.
      *
-     * @return user dto containing valid email.
+     * @return dto containing details about user.
      */
     default UserEmailDto getUserEmailDto() {
         return UserEmailDto.builder()
@@ -60,12 +74,41 @@ public interface UserData {
     }
 
     /**
-     * Builds a user signup dto.
+     * Builds a user authentication dto.
      *
-     * @return user dto containing valid email, password and confirmation in json format.
+     * @return dto containing details about user.
      * @throws JsonProcessingException if something goes wrong during parsing json.
      */
-    default String getUserDtoJson() throws JsonProcessingException {
-        return new ObjectMapper().writeValueAsString(getUserSignUpDto());
+    default String getUserAuthenticationDtoJson() throws JsonProcessingException {
+        return getUserMapper().writeValueAsString(getUserAuthenticationDto());
+    }
+
+    /**
+     * Builds a user signup dto.
+     *
+     * @return json object containing details about user.
+     * @throws JsonProcessingException if something goes wrong during parsing json.
+     */
+    default String getUserSignUpDtoJson() throws JsonProcessingException {
+        return getUserMapper().writeValueAsString(getUserSignUpDto());
+    }
+
+    /**
+     * Builds a user email dto.
+     *
+     * @return json object containing user email details.
+     * @throws JsonProcessingException if something goes wrong during parsing json.
+     */
+    default String getUserEmailDtoJson() throws JsonProcessingException {
+        return getUserMapper().writeValueAsString(getUserEmailDto());
+    }
+
+    /**
+     * Builds an object mapper.
+     *
+     * @return object mapper.
+     */
+    default ObjectMapper getUserMapper() {
+        return new ObjectMapper();
     }
 }
