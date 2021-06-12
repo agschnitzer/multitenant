@@ -1,29 +1,23 @@
-## Multi-Tenant Spring Boot Application
+## Multi-Tenant Spring Boot Application          [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+A Spring Boot application that utilises a multi-tenancy architecture by providing multiple databases, one for each tenant. 
 
-A Spring Boot application showcasing an implementation of multi-tenancy. It provides multiple databases, one for each tenant, which can be created dynamically. 
+Tenants, respectively users, are stored in the default database `db.mv.db`. All requests toward  `/api/v1/user` are subsequently accessing it while the rest is accessing the db of the authenticated user.
 
-Registered users are stored in the default database `db.mv.db` which is generated automatically. Depending on the authenticated user and requested service, the application dynamically selects the appropriate database.
+### How to initialise
 
-The application can be reached at `localhost:8080`.
+In order to use the application, a user must be logged in This authentication process returns a Bearer token which is used for all other requests. 
 
-### Creating a database
-
-First a user has to be created and authenticated. To register a new user, a POST request to `api/v1/user/signup` must be sent.
-
-#### Example signup request:
+#### 1. *POST* request to `api/v1/user/signup`.
 ```json
 {
   "email": "user@example.com",
   "password": "asdfasdfasdf",
   "confirmation": "asdfasdfasdf"
 }
-```
+```  
 
-After the successful registration, the user must be authenticated by sending a POST request to `api/v1/authentication`. A `Bearer` token is returned which is used for future requests.   
-
-#### Associated authentication request
+#### 2. *POST* request to `api/v1/user/authentication`
 ```json
 {
   "email": "user@example.com",
@@ -31,34 +25,28 @@ After the successful registration, the user must be authenticated by sending a P
 }
 ```
 
-### Accessing the database
+### How to use
 
-I have created an endpoint `api/v1/movie` to test this configuration. A user's email address can be changed at `api/v1/user/email`. 
+The application opens a [h2-console](http://localhost:8080/h2-console) to easily manage all available databases. Each one is generated right after the first access / request to it. The filename is the hashed email adress `database/[hashed_email].mv.db`.
 
-#### Example response of `GET` request `api/v1/movie/1`:
+- **Movie endpoint**
+  - POST `api/v1/movie`:
+  - GET `api/v1/movie/{id}`:
+- **User endpoint**
+  - PATCH `api/v1/user/email`
 
+#### Example request to `api/v1/movie`
 ```json
 {
-  "id": 1,
-  "title": "Movie title",
-  "runtime": 123,
-  "releaseDate": "2020-01-01"
+  "title": "The Hitchhiker's Guide to the Galaxy",
+  "runtime": 109,
+  "releaseDate": "2005-04-28"
 }
 ```
 
-#### Example `PATCH` request to change email address:
+#### Example request to `api/v1/user/email`
 ```json
 {
   "email": "new_user@example.com"
 }
 ```
-
-New movie entries can be added by using the [h2-console](http://localhost:8080/h2-console). (username and password is `admin`) 
-
-The database is generated after the first access / request with the hashed email address as the filename `database/[hashed_email].mv.db`.
-
-### Initial database creation
-
-Hibernate automatically creates the schema of each database. In the case that the file [create.sql](src/main/resources/create.sql) doesn't exist, and a new datasource is being created, the application encounters an error and crashes.
-
-Just restart the application to fix it. I'm trying to optimise the initial creation of the default database, so that such errors will no longer occur in the future.
