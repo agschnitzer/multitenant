@@ -60,12 +60,25 @@ public class UserServiceTest implements UserData {
     }
 
     @Test
-    // @Sql("classpath:user.sql")
     @DisplayName("After trying to sign up user with same email address as existing one, an exception should be thrown.")
     public void storedUser_whenSigningUp_shouldThrowException() {
         userRepository.save(getUser());
 
         assertNotNull(userService.findByEmail(EMAIL));
         assertThrows(ValidationException.class, () -> userService.signUp(getUser()));
+    }
+
+    @Test
+    @DisplayName("After changing email of user with new email, the new email should be returned.")
+    public void storedUser_whenChangingEmail_withNewEmail_shouldReturnNewEmail() {
+        userRepository.save(getUser());
+        assertEquals(NEW_EMAIL, userService.patchEmail(getUserEmail(NEW_EMAIL)));
+    }
+
+    @Test
+    @DisplayName("After changing email of user with same email, an exception should be thrown.")
+    public void storedUser_whenChangingEmail_withSameEmail_shouldThrowException() {
+        userRepository.save(getUser());
+        assertThrows(ValidationException.class, () -> userService.patchEmail(getUserEmail(EMAIL)));
     }
 }

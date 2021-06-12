@@ -34,4 +34,12 @@ public interface UserService extends UserDetailsService {
      * @throws DataSourceException if something goes wrong during changing file names.
      */
     String patchEmail(User user) throws ValidationException, DataSourceException;
+
+    /**
+     * Checks if user exists.
+     *
+     * @param email of user.
+     * @return true if the user with given email exists.
+     */
+    Boolean existsByEmail(String email);
 }

@@ -2,6 +2,7 @@ package com.example.multitenant.security;
 
 import com.example.multitenant.config.DatabaseConfig;
 import com.example.multitenant.config.properties.SecurityProperties;
+import com.example.multitenant.service.UserService;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
@@ -28,12 +29,14 @@ public class JwtAuthorization extends BasicAuthenticationFilter {
 
     private final SecurityProperties securityProperties;
     private final DatabaseConfig databaseConfig;
+    private final UserService userService;
 
     public JwtAuthorization(AuthenticationManager authenticationManager, SecurityProperties securityProperties,
-                            DatabaseConfig databaseConfig) {
+                            DatabaseConfig databaseConfig, UserService userService) {
         super(authenticationManager);
         this.securityProperties = securityProperties;
         this.databaseConfig = databaseConfig;
+        this.userService = userService;
     }
 
     @Override
@@ -81,6 +84,9 @@ public class JwtAuthorization extends BasicAuthenticationFilter {
         if (username == null || username.isEmpty()) {
             throw new IllegalArgumentException("Token contains no user");
         }
+
+        DatabaseConfig.DBContextHolder.setDefault();
+        if (!userService.existsByEmail(username)) throw new JwtException("JWT is no longer valid");
 
         // select active database and set thread context accordingly
         if (request.getRequestURI().startsWith("/api/v1/user/")) {

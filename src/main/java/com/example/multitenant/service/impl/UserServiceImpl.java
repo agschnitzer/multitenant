@@ -93,4 +93,10 @@ public class UserServiceImpl implements UserService {
 
         return userRepository.save(existingUser).getEmail();
     }
+
+    @Override
+    public Boolean existsByEmail(String email) {
+        LOGGER.trace("existsByEmail({})", email);
+        return userRepository.existsUserByEmailEquals(email);
+    }
 }

@@ -3,6 +3,8 @@ package com.example.multitenant.data;
 import com.example.multitenant.endpoint.dto.UserEmailDto;
 import com.example.multitenant.endpoint.dto.UserSignupDto;
 import com.example.multitenant.entity.User;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 public interface UserData {
 
@@ -11,7 +13,7 @@ public interface UserData {
     String PASSWORD = "SecretPassword1!";
 
     /**
-     * Builds an user entity.
+     * Builds a user entity.
      *
      * @return user entity containing valid email, password and confirmation.
      */
@@ -24,7 +26,17 @@ public interface UserData {
     }
 
     /**
-     * Builds an user signup dto.
+     * Builds a user entity.
+     *
+     * @param email of user.
+     * @return user entity containing only new email.
+     */
+    default User getUserEmail(String email) {
+        return User.builder().email(email).build();
+    }
+
+    /**
+     * Builds a user signup dto.
      *
      * @return user dto containing valid email, password and confirmation.
      */
@@ -37,7 +49,7 @@ public interface UserData {
     }
 
     /**
-     * Builds an user email dto.
+     * Builds a user email dto.
      *
      * @return user dto containing valid email.
      */
@@ -45,5 +57,15 @@ public interface UserData {
         return UserEmailDto.builder()
                 .email(NEW_EMAIL)
                 .build();
+    }
+
+    /**
+     * Builds a user signup dto.
+     *
+     * @return user dto containing valid email, password and confirmation in json format.
+     * @throws JsonProcessingException if something goes wrong during parsing json.
+     */
+    default String getUserDtoJson() throws JsonProcessingException {
+        return new ObjectMapper().writeValueAsString(getUserSignUpDto());
     }
 }
