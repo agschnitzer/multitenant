@@ -6,7 +6,7 @@ Tenants, respectively users, are stored in the default database `db.mv.db`. All 
 
 ### How to initialise
 
-In order to use the application, a user must be logged in This authentication process returns a Bearer token which is used for all other requests. 
+In order to use the application, a user must be logged in. This authentication process returns a Bearer token which is used for all other requests. 
 
 #### 1. *POST* request to `api/v1/user/signup`.
 ```json

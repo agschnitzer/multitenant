@@ -70,7 +70,7 @@ public class JwtAuthentication extends UsernamePasswordAuthenticationFilter {
     protected void unsuccessfulAuthentication(HttpServletRequest request, HttpServletResponse response,
                                               AuthenticationException failed) throws IOException {
         response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-        response.getWriter().write(failed.getMessage());
+        response.getWriter().write("Invalid authentication attempt");
         LOGGER.info("Invalid authentication attempt: {}", failed.getMessage());
     }
 }

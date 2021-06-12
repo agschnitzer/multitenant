@@ -280,7 +280,7 @@ public class DatabaseConfig {
          */
         private static String generateDataSourceName(String username) throws DataSourceException {
             try {
-                MessageDigest messageDigest = MessageDigest.getInstance("MD5");
+                MessageDigest messageDigest = MessageDigest.getInstance("SHA-256");
                 messageDigest.update(username.getBytes());
                 return DatatypeConverter.printHexBinary(messageDigest.digest());
             } catch (NoSuchAlgorithmException e) {
