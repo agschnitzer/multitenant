@@ -2,7 +2,6 @@ package com.example.multitenant.integration;
 
 import com.example.multitenant.data.UserData;
 import com.example.multitenant.repository.UserRepository;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,9 +26,6 @@ public class UserIntegrationTest implements UserData {
     private MockMvc mockMvc;
 
     @Autowired
-    private ObjectMapper objectMapper;
-
-    @Autowired
     private UserRepository userRepository;
 
     @Test
@@ -37,7 +33,7 @@ public class UserIntegrationTest implements UserData {
     public void storedNothing_whenSigningUp_thenEntityShouldBeSaved() throws Exception {
         mockMvc.perform(post("/api/v1/user/signup")
                 .contentType("application/json")
-                .content(objectMapper.writeValueAsString(getUserSignUpDto())))
+                .content(getUserDtoJson()))
                 .andExpect(status().isCreated());
 
         assertTrue(userRepository.existsUserByEmailEquals(EMAIL));
@@ -48,12 +44,12 @@ public class UserIntegrationTest implements UserData {
     public void storedUser_whenSigningUp_shouldThrowException() throws Exception {
         mockMvc.perform(post("/api/v1/user/signup")
                 .contentType("application/json")
-                .content(objectMapper.writeValueAsString(getUserSignUpDto())))
+                .content(getUserDtoJson()))
                 .andExpect(status().isCreated());
 
         mockMvc.perform(post("/api/v1/user/signup")
                 .contentType("application/json")
-                .content(objectMapper.writeValueAsString(getUserSignUpDto())))
+                .content(getUserDtoJson()))
                 .andExpect(status().isBadRequest());
     }
 }

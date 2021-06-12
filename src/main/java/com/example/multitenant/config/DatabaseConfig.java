@@ -129,10 +129,7 @@ public class DatabaseConfig {
         String oldIdentifier = DBContextHolder.generateDataSourceName(oldUsername);
         String newIdentifier = DBContextHolder.generateDataSourceName(newUsername);
 
-        Object dataSource = configurations.get(oldIdentifier);
-        configurations.remove(oldIdentifier);
-        HikariDataSource hikariDataSource = ((HikariDataSource) dataSource);
-        if (hikariDataSource != null && hikariDataSource.isRunning()) hikariDataSource.close();
+        configurations.put(newIdentifier, configurations.remove(oldIdentifier));
 
         String[] extensions = new String[]{"mv", "trace"};
         for (String extension : extensions) {

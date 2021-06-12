@@ -36,7 +36,6 @@ public class MovieServiceImpl implements MovieService {
     @Override
     public Long save(Movie movie) {
         LOGGER.trace("save({})", movie);
-
         return movieRepository.save(movie).getId();
     }
 }

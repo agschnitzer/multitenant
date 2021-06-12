@@ -3,12 +3,12 @@ package com.example.multitenant.integration;
 import com.example.multitenant.data.MovieData;
 import com.example.multitenant.data.UserData;
 import com.example.multitenant.security.JwtTokenizer;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
@@ -24,7 +24,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Transactional
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
-@WithMockUser(username = "user@example.com", password = "SecretPassword1!")
 public class MovieIntegrationTest implements MovieData, UserData {
 
     @Autowired
@@ -32,6 +31,14 @@ public class MovieIntegrationTest implements MovieData, UserData {
 
     @Autowired
     private JwtTokenizer jwtTokenizer;
+
+    @BeforeEach
+    public void addUser() throws Exception {
+        mockMvc.perform(post("/api/v1/user/signup")
+                .contentType("application/json")
+                .content(getUserDtoJson()))
+                .andExpect(status().isCreated());
+    }
 
     @Test
     @DisplayName("After getting stored movie, dto should be returned.")
