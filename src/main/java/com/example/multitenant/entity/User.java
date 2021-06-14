@@ -1,5 +1,6 @@
 package com.example.multitenant.entity;
 
+import com.example.multitenant.config.EncoderConfig;
 import lombok.*;
 
 import javax.persistence.*;
@@ -22,4 +23,9 @@ public class User {
 
     @Transient
     private String confirmation;
+
+    @PrePersist
+    public void prePersist() {
+        password = EncoderConfig.getPasswordEncoder().encode(password);
+    }
 }

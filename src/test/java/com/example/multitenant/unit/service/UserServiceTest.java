@@ -131,9 +131,11 @@ public class UserServiceTest implements UserData {
         User stored = getUser();
         userRepository.save(stored);
 
-        assertEquals(EMAIL, stored.getEmail());
-        assertNotEquals(NEW_EMAIL, stored.getEmail());
-        assertEquals(NEW_EMAIL, userService.patchEmail(getUserEmail(NEW_EMAIL)));
+        assertAll(
+                () -> assertEquals(EMAIL, stored.getEmail()),
+                () -> assertNotEquals(NEW_EMAIL, stored.getEmail()),
+                () -> assertEquals(NEW_EMAIL, userService.patchEmail(getUserEmail(NEW_EMAIL)))
+        );
 
         databaseConfig.renameDatasource(NEW_EMAIL, EMAIL);
     }

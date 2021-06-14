@@ -33,8 +33,8 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 
     private final UserService userService;
     private final PasswordEncoder passwordEncoder;
-    private final SecurityProperties securityProperties;
     private final JwtTokenizer tokenizer;
+    private final SecurityProperties securityProperties;
     private final DatabaseConfig databaseConfig;
     private final RequestMatcher whitelistRequests;
 
@@ -43,8 +43,8 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                           SecurityProperties securityProperties, DatabaseConfig databaseConfig) {
         this.userService = userService;
         this.passwordEncoder = passwordEncoder;
-        this.securityProperties = securityProperties;
         this.tokenizer = tokenizer;
+        this.securityProperties = securityProperties;
         this.databaseConfig = databaseConfig;
 
         this.whitelistRequests = new OrRequestMatcher(securityProperties.getWhitelist()
@@ -88,7 +88,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 .authorizeRequests()
                 .anyRequest().authenticated()
                 .and()
-                .addFilter(new JwtAuthentication(securityProperties, authenticationManager(), tokenizer))
+                .addFilter(new JwtAuthentication(authenticationManager(), tokenizer, securityProperties.getLoginUri()))
                 .addFilter(new JwtAuthorization(authenticationManager(), securityProperties, databaseConfig, userService))
                 .sessionManagement()
                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS);

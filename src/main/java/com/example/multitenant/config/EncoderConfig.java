@@ -10,4 +10,11 @@ public class EncoderConfig {
 
     @Bean
     public PasswordEncoder passwordEncoder() { return new BCryptPasswordEncoder(); }
+
+    /**
+     * Gets new password encoder to use in entities.
+     *
+     * @return password encoder.
+     */
+    public static PasswordEncoder getPasswordEncoder() { return new BCryptPasswordEncoder(); }
 }

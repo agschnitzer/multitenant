@@ -30,7 +30,7 @@ public class DatabaseConfigTest {
         Files.delete(path);
         assertFalse(Files.exists(path));
 
-        databaseConfig.createDataSourceSchema(databaseConfig.generateMetadata(false), false);
+        databaseConfig.createDataSourceSchema(databaseConfig.generateMetadata(false));
         assertTrue(Files.exists(path));
 
         path = Path.of("src/main/resources/create_default.sql");
@@ -40,7 +40,7 @@ public class DatabaseConfigTest {
         Files.delete(path);
         assertFalse(Files.exists(path));
 
-        databaseConfig.createDataSourceSchema(databaseConfig.generateMetadata(true), true);
+        databaseConfig.createDataSourceSchema(databaseConfig.generateMetadata(true));
         assertTrue(Files.exists(path));
     }
 

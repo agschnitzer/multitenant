@@ -1,6 +1,5 @@
 package com.example.multitenant.security;
 
-import com.example.multitenant.config.properties.SecurityProperties;
 import com.example.multitenant.endpoint.dto.UserAuthenticationDto;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
@@ -28,12 +27,11 @@ public class JwtAuthentication extends UsernamePasswordAuthenticationFilter {
     private final AuthenticationManager authenticationManager;
     private final JwtTokenizer tokenizer;
 
-    public JwtAuthentication(SecurityProperties securityProperties, AuthenticationManager authenticationManager,
-                             JwtTokenizer tokenizer) {
-        setFilterProcessesUrl(securityProperties.getLoginUri());
-
+    public JwtAuthentication(AuthenticationManager authenticationManager, JwtTokenizer tokenizer, String loginUri) {
         this.authenticationManager = authenticationManager;
         this.tokenizer = tokenizer;
+
+        setFilterProcessesUrl(loginUri);
     }
 
     @Override
@@ -56,8 +54,7 @@ public class JwtAuthentication extends UsernamePasswordAuthenticationFilter {
                                             Authentication authResult) throws IOException {
         User user = ((User) authResult.getPrincipal());
         response.getWriter().write(
-                tokenizer.createToken(user.getUsername(), user.getAuthorities()
-                        .stream()
+                tokenizer.createToken(user.getUsername(), user.getAuthorities().stream()
                         .map(GrantedAuthority::getAuthority)
                         .collect(Collectors.toList())
                 )
@@ -69,8 +66,9 @@ public class JwtAuthentication extends UsernamePasswordAuthenticationFilter {
     @Override
     protected void unsuccessfulAuthentication(HttpServletRequest request, HttpServletResponse response,
                                               AuthenticationException failed) throws IOException {
+        LOGGER.info("Invalid authentication attempt: {}", failed.getMessage());
+
         response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
         response.getWriter().write("Invalid authentication attempt");
-        LOGGER.info("Invalid authentication attempt: {}", failed.getMessage());
     }
 }

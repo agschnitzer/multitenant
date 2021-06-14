@@ -13,7 +13,6 @@ import org.springframework.security.core.authority.AuthorityUtils;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import javax.transaction.Transactional;
@@ -27,20 +26,20 @@ public class UserServiceImpl implements UserService {
     private static final Logger LOGGER = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
     private final UserRepository userRepository;
-    private final PasswordEncoder passwordEncoder;
     private final DatabaseConfig databaseConfig;
 
     @Autowired
-    public UserServiceImpl(UserRepository userRepository, PasswordEncoder passwordEncoder, DatabaseConfig databaseConfig) {
+    public UserServiceImpl(UserRepository userRepository, DatabaseConfig databaseConfig) {
         this.userRepository = userRepository;
-        this.passwordEncoder = passwordEncoder;
         this.databaseConfig = databaseConfig;
     }
 
     @Override
-    public UserDetails loadUserByUsername(String s) throws UsernameNotFoundException {
+    public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
+        LOGGER.trace("loadUserByUsername({})", email);
+
         try {
-            User user = findByEmail(s);
+            User user = findByEmail(email);
             return new org.springframework.security.core.userdetails.User(
                     user.getEmail(), user.getPassword(), AuthorityUtils.createAuthorityList("ROLE_USER")
             );
@@ -60,17 +59,14 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public void signup(User user) throws ValidationException {
-        LOGGER.trace("signUp({})", user);
+        LOGGER.trace("signup({})", user);
 
         if (!user.getPassword().equals(user.getConfirmation())) {
             throw new ValidationException("Password and confirmation don't match");
-        }
-
-        user.setPassword(passwordEncoder.encode(user.getPassword()));
-
-        if (existsByEmail(user.getEmail())) {
+        } else if (existsByEmail(user.getEmail())) {
             throw new ValidationException("Email already taken");
         }
+
         userRepository.save(user);
     }
 
@@ -83,12 +79,10 @@ public class UserServiceImpl implements UserService {
             throw new ValidationException("Email already taken");
         }
 
-        User existingUser = findByEmail(SecurityContextHolder.getContext().getAuthentication().getName());
+        String existingEmail = SecurityContextHolder.getContext().getAuthentication().getName();
+        userRepository.changeUserEmail(existingEmail, user.getEmail());
+        databaseConfig.renameDatasource(existingEmail, user.getEmail());
 
-        databaseConfig.renameDatasource(existingUser.getEmail(), user.getEmail());
-        existingUser.setEmail(user.getEmail());
-
-        userRepository.save(existingUser);
         return user.getEmail();
     }
 

@@ -21,6 +21,9 @@ public class DatabaseProperties {
     @Value("${spring.jpa.properties.hibernate.hbm2ddl.auto}")
     private String ddl;
 
+    @Value("${spring.datasource.name}")
+    private String directory;
+
     private Database database;
 
     @Autowired
@@ -34,6 +37,10 @@ public class DatabaseProperties {
 
     public String getDdl() {
         return ddl;
+    }
+
+    public String getDirectory() {
+        return directory;
     }
 
     public String getUrl() { return database.getUrl(); }
