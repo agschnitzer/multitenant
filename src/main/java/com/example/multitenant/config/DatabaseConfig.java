@@ -59,7 +59,7 @@ public class DatabaseConfig {
     }
 
     @Bean
-    public DataSource dataSource() throws IOException {
+    public DataSource dataSource() {
         loadDataSources().forEach(this::addDataSource);
 
         dataSource.setTargetDataSources(configurations);
@@ -207,13 +207,16 @@ public class DatabaseConfig {
      * Loads list containing each datasource.
      *
      * @return list of datasource names. If none are found, the default datasource is returned.
-     * @throws IOException if something goes wrong during accessing the specified path.
      */
-    private List<String> loadDataSources() throws IOException {
-        List<String> dataSources = Files.list(Path.of(databaseProperties.getDirectory() + "/"))
-                .filter(file -> file.getFileName().toString().endsWith("mv.db"))
-                .map(file -> file.getFileName().toString().split("\\.")[0])
-                .collect(Collectors.toList());
+    private List<String> loadDataSources() {
+        List<String> dataSources = new ArrayList<>();
+        try {
+            dataSources = Files.list(Path.of(databaseProperties.getDirectory() + "/"))
+                    .filter(file -> file.getFileName().toString().endsWith("mv.db"))
+                    .map(file -> file.getFileName().toString().split("\\.")[0])
+                    .collect(Collectors.toList());
+        } catch (IOException ignored) {}
+
 
         return dataSources.isEmpty() ? Collections.singletonList(DBContextHolder.DEFAULT_DATASOURCE) : dataSources;
     }
