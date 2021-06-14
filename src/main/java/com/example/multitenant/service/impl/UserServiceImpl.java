@@ -28,11 +28,13 @@ public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final DatabaseConfig databaseConfig;
 
     @Autowired
-    public UserServiceImpl(UserRepository userRepository, PasswordEncoder passwordEncoder) {
+    public UserServiceImpl(UserRepository userRepository, PasswordEncoder passwordEncoder, DatabaseConfig databaseConfig) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
+        this.databaseConfig = databaseConfig;
     }
 
     @Override
@@ -83,10 +85,11 @@ public class UserServiceImpl implements UserService {
 
         User existingUser = findByEmail(SecurityContextHolder.getContext().getAuthentication().getName());
 
-        DatabaseConfig.renameDatasource(existingUser.getEmail(), user.getEmail());
+        databaseConfig.renameDatasource(existingUser.getEmail(), user.getEmail());
         existingUser.setEmail(user.getEmail());
 
-        return userRepository.save(existingUser).getEmail();
+        userRepository.save(existingUser);
+        return user.getEmail();
     }
 
     @Override

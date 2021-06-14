@@ -1,6 +1,7 @@
 package com.example.multitenant.config;
 
 import com.example.multitenant.config.properties.DatabaseProperties;
+import com.example.multitenant.entity.User;
 import com.github.fluent.hibernate.cfg.scanner.EntityScanner;
 import org.hibernate.boot.MetadataSources;
 import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
@@ -45,14 +46,15 @@ public class DatabaseConfig {
     private static final Logger LOGGER = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
     private static final Map<Object, Object> configurations = new ConcurrentHashMap<>();
     private static final String BASE_PACKAGE = "com.example.multitenant.entity";
-    private static final String CREATE_FILE_URI = "src/main/resources/create.sql";
+    private static final String CREATE_TENANT_URI = "src/main/resources/create.sql";
+    private static final String CREATE_DEFAULT_URI = "src/main/resources/create_default.sql";
 
     private final DatabaseProperties databaseProperties;
     private final ApplicationContext applicationContext;
     private final ResourceLoader resourceLoader;
     private final RoutingDataSource dataSource;
 
-    @Value("${spring.db}")
+    @Value("${spring.datasource.name}")
     private String databaseLocation;
 
     @Autowired
@@ -89,8 +91,9 @@ public class DatabaseConfig {
 
     @Bean
     public LocalSessionFactoryBean sessionFactory() {
-        MetadataSources metadataSources = generateMetadata();
-        if (applicationContext.getResource(CREATE_FILE_URI).exists()) createDataSourceSchema(metadataSources);
+        MetadataSources metadataSources = generateMetadata(true);
+        if (Files.notExists(Path.of(CREATE_DEFAULT_URI))) createDataSourceSchema(metadataSources, true);
+        if (Files.notExists(Path.of(CREATE_TENANT_URI))) createDataSourceSchema(generateMetadata(false), false);
 
         LocalSessionFactoryBean sessionFactory = new LocalSessionFactoryBean();
         sessionFactory.setMetadataSources(metadataSources);
@@ -116,7 +119,7 @@ public class DatabaseConfig {
      * @param newUsername non-hashed new identifier.
      * @throws IOException if something goes wrong during changing file names.
      */
-    public static void renameDatasource(String oldUsername, String newUsername) throws IOException {
+    public void renameDatasource(String oldUsername, String newUsername) throws IOException {
         String oldIdentifier = DBContextHolder.generateDataSourceName(oldUsername);
         String newIdentifier = DBContextHolder.generateDataSourceName(newUsername);
 
@@ -124,7 +127,7 @@ public class DatabaseConfig {
 
         String[] extensions = new String[]{"mv", "trace"};
         for (String extension : extensions) {
-            Path source = Paths.get("database/" + oldIdentifier + "." + extension + ".db");
+            Path source = Paths.get(databaseLocation + "/" + oldIdentifier + "." + extension + ".db");
             if (Files.exists(source)) Files.move(source, source.resolveSibling(newIdentifier + "." + extension + ".db"));
         }
     }
@@ -134,7 +137,7 @@ public class DatabaseConfig {
      *
      * @return a map containing all data sources.
      */
-    protected static Map<Object, Object> getConfigurations() {
+    public Map<Object, Object> getConfigurations() {
         return configurations;
     }
 
@@ -147,7 +150,7 @@ public class DatabaseConfig {
         String dataSourceName = DBContextHolder.generateDataSourceName(username);
 
         if (!configurations.containsKey(dataSourceName)) {
-            if (applicationContext.getResource("file:" + databaseLocation + "/" + dataSourceName + ".mv.db").exists()) {
+            if (Files.exists(Path.of(databaseLocation + "/" + dataSourceName + ".mv.db"))) {
                 configurations.put(dataSourceName, databaseProperties.dataSource(dataSourceName, DBContextHolder.DEFAULT_DATASOURCE));
             } else {
                 addDataSource(dataSourceName);
@@ -162,22 +165,24 @@ public class DatabaseConfig {
      * Creates sql file from schema.
      *
      * @param metadataSources containing annotated classes.
+     * @param isDefault true if schema should only contain user table.
      */
-    protected void createDataSourceSchema(MetadataSources metadataSources) {
+    protected void createDataSourceSchema(MetadataSources metadataSources, Boolean isDefault) {
         SchemaExport schemaExport = new SchemaExport();
 
         schemaExport.setFormat(true);
         schemaExport.setDelimiter(";");
-        schemaExport.setOutputFile(CREATE_FILE_URI);
+        schemaExport.setOutputFile(isDefault ? CREATE_DEFAULT_URI : CREATE_TENANT_URI);
         schemaExport.createOnly(EnumSet.of(TargetType.SCRIPT), metadataSources.buildMetadata());
     }
 
     /**
      * Generates metadata needed for creation of schema.
      *
+     * @param isDefault true if schema should only contain user table.
      * @return metadata containing settings and annotated classes.
      */
-    protected MetadataSources generateMetadata() {
+    protected MetadataSources generateMetadata(Boolean isDefault) {
         Map<String, String> settings = new HashMap<>();
         settings.put("connection.driver_class", databaseProperties.getDriverClassName());
         settings.put("dialect", databaseProperties.getDialect());
@@ -188,8 +193,14 @@ public class DatabaseConfig {
         MetadataSources metadataSources = new MetadataSources(
                 new StandardServiceRegistryBuilder().applySettings(settings).build()
         );
+
+        if (isDefault) {
+            metadataSources.addAnnotatedClass(User.class);
+            return metadataSources;
+        }
+
         for (Class<?> annotatedClass : EntityScanner.scanPackages(BASE_PACKAGE).result()) {
-            metadataSources.addAnnotatedClass(annotatedClass);
+            if (annotatedClass != User.class) metadataSources.addAnnotatedClass(annotatedClass);
         }
 
         return metadataSources;
@@ -218,17 +229,18 @@ public class DatabaseConfig {
         DataSource dataSource = databaseProperties.dataSource(hashedUsername, DBContextHolder.DEFAULT_DATASOURCE);
 
         configurations.put(hashedUsername, dataSource);
-        initDataSource(dataSource);
+        initDataSource(dataSource, hashedUsername.equals(DBContextHolder.DEFAULT_DATASOURCE) ? "classpath:create_default.sql" : "classpath:create.sql");
     }
 
     /**
      * Initializes datasource by executing sql scripts to create necessary tables and insert sample data.
      *
      * @param dataSource datasource loaded from storage or created recently.
+     * @param filename of file containing create statements.
      */
-    private void initDataSource(DataSource dataSource) {
+    private void initDataSource(DataSource dataSource, String filename) {
         try {
-            new ResourceDatabasePopulator(resourceLoader.getResource("classpath:create.sql")).execute(dataSource);
+            new ResourceDatabasePopulator(resourceLoader.getResource(filename)).execute(dataSource);
         } catch (ScriptException ignored) {}
     }
 
@@ -251,7 +263,9 @@ public class DatabaseConfig {
     private static class RoutingDataSource extends AbstractRoutingDataSource {
         @Override
         protected Object determineCurrentLookupKey() {
-            return DBContextHolder.CONTEXT.get();
+            String context = DBContextHolder.CONTEXT.get();
+            LOGGER.debug("Current datasource: " + context);
+            return context;
         }
     }
 
@@ -275,7 +289,7 @@ public class DatabaseConfig {
          *
          * @param context in form of the username.
          */
-        protected static void setContext(String context) {
+        public static void setContext(String context) {
             String identifier = generateDataSourceName(context);
 
             CONTEXT.set(identifier);
@@ -288,7 +302,7 @@ public class DatabaseConfig {
          * @param username identifier of user.
          * @return a string representing the hashed username.
          */
-        protected static String generateDataSourceName(String username) {
+        public static String generateDataSourceName(String username) {
             MessageDigest messageDigest = null;
 
             try {

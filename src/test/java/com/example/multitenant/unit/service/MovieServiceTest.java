@@ -1,30 +1,41 @@
 package com.example.multitenant.unit.service;
 
+import com.example.multitenant.config.DatabaseConfig;
 import com.example.multitenant.data.MovieData;
+import com.example.multitenant.data.UserData;
 import com.example.multitenant.entity.Movie;
 import com.example.multitenant.exceptionhandler.exceptions.NotFoundException;
 import com.example.multitenant.repository.MovieRepository;
 import com.example.multitenant.service.MovieService;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
-
-import javax.transaction.Transactional;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest
 @ActiveProfiles("test")
-@Transactional
-public class MovieServiceTest implements MovieData {
+public class MovieServiceTest implements MovieData, UserData {
 
     @Autowired
     private MovieService movieService;
 
     @Autowired
     private MovieRepository movieRepository;
+
+    @Autowired
+    private DatabaseConfig databaseConfig;
+
+    @BeforeEach
+    public void beforeEach() {
+        databaseConfig.setActiveDatasource(EMAIL);
+    }
+
+    @AfterEach
+    public void afterEach() {
+        movieRepository.deleteAll();
+    }
 
     @Test
     @DisplayName("Getting stored entity should return entity.")

@@ -4,7 +4,10 @@ import com.example.multitenant.config.DatabaseConfig;
 import com.example.multitenant.data.UserData;
 import com.example.multitenant.endpoint.dto.UserAuthenticationDto;
 import com.example.multitenant.endpoint.dto.UserSignupDto;
+import com.example.multitenant.repository.UserRepository;
 import com.example.multitenant.security.JwtTokenizer;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,8 +17,6 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
-import javax.transaction.Transactional;
-
 import java.util.Collections;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -23,7 +24,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest
-@Transactional
 @ActiveProfiles("test")
 @AutoConfigureMockMvc
 public class UserIntegrationTest implements UserData {
@@ -33,6 +33,31 @@ public class UserIntegrationTest implements UserData {
 
     @Autowired
     private JwtTokenizer jwtTokenizer;
+
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private DatabaseConfig databaseConfig;
+
+    @BeforeEach
+    public void beforeEach() {
+        DatabaseConfig.DBContextHolder.setDefault();
+        userRepository.deleteAll();
+    }
+
+    @AfterEach
+    public void afterEach() {
+        DatabaseConfig.DBContextHolder.setDefault();
+        userRepository.deleteAll();
+    }
+
+    private void saveEntity() throws Exception {
+        mockMvc.perform(post("/api/v1/user/signup")
+                .contentType("application/json")
+                .content(getUserSignUpDtoJson()))
+                .andExpect(status().isCreated());
+    }
 
     @Test
     @DisplayName("Saving entity should return status is created.")
@@ -92,7 +117,7 @@ public class UserIntegrationTest implements UserData {
 
         assertEquals(NEW_EMAIL, result.getResponse().getContentAsString());
 
-        DatabaseConfig.renameDatasource(NEW_EMAIL, EMAIL);
+        databaseConfig.renameDatasource(NEW_EMAIL, EMAIL);
     }
 
     @Test
@@ -145,12 +170,5 @@ public class UserIntegrationTest implements UserData {
         mockMvc.perform(post("/api/v1/authentication")
                 .content(getUserSignUpDtoJson()))
                 .andExpect(status().isUnauthorized());
-    }
-
-    private void saveEntity() throws Exception {
-        mockMvc.perform(post("/api/v1/user/signup")
-                .contentType("application/json")
-                .content(getUserSignUpDtoJson()))
-                .andExpect(status().isCreated());
     }
 }

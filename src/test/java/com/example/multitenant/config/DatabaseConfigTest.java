@@ -6,8 +6,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 
-import javax.transaction.Transactional;
-
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -16,7 +14,6 @@ import java.util.Map;
 import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest
-@Transactional
 @ActiveProfiles("test")
 public class DatabaseConfigTest {
 
@@ -33,7 +30,17 @@ public class DatabaseConfigTest {
         Files.delete(path);
         assertFalse(Files.exists(path));
 
-        databaseConfig.createDataSourceSchema(databaseConfig.generateMetadata());
+        databaseConfig.createDataSourceSchema(databaseConfig.generateMetadata(false), false);
+        assertTrue(Files.exists(path));
+
+        path = Path.of("src/main/resources/create_default.sql");
+
+        assertTrue(Files.exists(path));
+
+        Files.delete(path);
+        assertFalse(Files.exists(path));
+
+        databaseConfig.createDataSourceSchema(databaseConfig.generateMetadata(true), true);
         assertTrue(Files.exists(path));
     }
 
@@ -47,12 +54,13 @@ public class DatabaseConfigTest {
         assertFalse(Files.exists(path));
         databaseConfig.setActiveDatasource(username);
 
-        Map<Object, Object> configurations = DatabaseConfig.getConfigurations();
+        Map<Object, Object> configurations = databaseConfig.getConfigurations();
         configurations.remove(dataSourceName);
 
         assertTrue(Files.exists(path));
         databaseConfig.setActiveDatasource(username);
 
         Files.delete(path);
+        databaseConfig.getConfigurations().remove(dataSourceName);
     }
 }
