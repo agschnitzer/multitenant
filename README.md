@@ -1,4 +1,4 @@
-## Multi-Tenant Spring Boot Application          [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+## Multi-Tenant Spring Boot Application          [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) [![build](https://github.com/agschnitzer/multitenant/actions/workflows/build_test.yml/badge.svg)](https://github.com/agschnitzer/multitenant/actions/workflows/build_test.yml)
 
 A Spring Boot application that utilises a multi-tenancy architecture by providing multiple databases, one for each tenant. 
 
